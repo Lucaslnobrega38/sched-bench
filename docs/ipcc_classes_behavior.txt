@@ -1,0 +1,314 @@
+# Comportamento das Classes IPCC (Intel Thread Director)
+
+**Plataforma:** Intel i5-1335U (Raptor Lake-P) — 2 P-cores (CPU 0-3, HT) + 8 E-cores (CPU 4-11)
+**Kernel:** 7.0.0-rc1 com patches IPCC (ipcc_push)
+**Metodologia:** stress-ng --cpu 1 --cpu-method <method>, pinado no P-core 0 via taskset, sibling HT ocioso. Classificação lida via trace_printk em arch_update_ipcc, filtrada por PID do worker (~128 amostras em 3s, ~43/s). Cada método rodou por 3s.
+
+
+## Mapeamento de Classes
+
+O scheduler adiciona +1 à classe reportada pelo hardware ITD, reservando 0 para "não classificado":
+
+| Hardware ITD | Scheduler (`ipcc`) | Nome           |
+|--------------|--------------------|----------------|
+| —            | 0                  | Unclassified   |
+| 0            | 1                  | Integer/Scalar |
+| 1            | 2                  | Vector/SIMD    |
+| 2            | 3                  | Não documentada|
+
+---
+
+## Classe 0 — Unclassified
+
+Atribuída a processos que nunca foram avaliados pelo ITD. Ocorre quando:
+
+- O processo roda exclusivamente em E-cores (ITD só opera em P-cores).
+- O processo tem vida curta demais para receber uma classificação.
+- O processo está idle ou bloqueado em I/O.
+
+Nenhum dos 82 métodos testados recebeu classe 0 em qualquer amostra. Confirma que o ITD classifica ativamente todo workload sustentado em P-core.
+
+---
+
+## Classe 1 — Integer/Scalar (HW class 0)
+
+Workloads dominados por operações escalares: aritmética inteira, FP escalar (x87/SSE), branches, e acessos de memória com padrão regular.
+
+**Características:**
+- Classificação extremamente estável: 100% cls1 na medição filtrada por PID (0 amostras cls2 para a maioria dos métodos).
+- Classe mais "pegajosa" — uma vez atribuída, não muda.
+- Inclui operações de ponto flutuante escalar (float, double, longdouble), o que é contra-intuitivo dado o nome "integer".
+
+**Métodos stress-ng classificados como classe 1 (40 métodos):**
+
+| Método           | cls2%  | Natureza computacional                    |
+|------------------|--------|-------------------------------------------|
+| ackermann        | 0%     | Recursão inteira profunda                 |
+| apery            | 0%     | Série numérica (convergência lenta)       |
+| callfunc         | 0%     | Overhead de chamada de função             |
+| cdouble          | 0%     | Aritmética complex double (escalar)       |
+| clongdouble      | 0%     | Aritmética complex long double (escalar)  |
+| decimal32        | 0%     | Aritmética decimal de 32 bits             |
+| decimal64        | 0%     | Aritmética decimal de 64 bits             |
+| decimal128       | 0%     | Aritmética decimal de 128 bits            |
+| div16            | 0%     | Divisão inteira de 16 bits                |
+| div128           | 0%     | Divisão inteira de 128 bits               |
+| double           | 0%     | Aritmética FP double escalar              |
+| euler            | 0%     | Série de Euler (FP escalar)               |
+| factorial        | 0%     | Fatorial iterativo (inteiro grande)       |
+| fibonacci        | 0%     | Sequência de Fibonacci (inteiro)          |
+| float            | 0%     | Aritmética FP float escalar               |
+| float32          | 0%     | Operações float 32-bit                    |
+| float64          | 0%     | Operações float 64-bit                    |
+| float80          | 0%     | Operações float 80-bit (x87)             |
+| float128         | 0%     | Operações float 128-bit (soft-float)      |
+| gamma            | 0%     | Função gamma (FP transcendental)          |
+| gcd              | 0%     | Maior divisor comum (inteiro)             |
+| hanoi            | 0%     | Torres de Hanói (recursão)                |
+| hyperbolic       | 0%     | Funções hiperbólicas (FP transcendental)  |
+| int32longdouble  | 0%     | Conversão int32 ↔ long double             |
+| int64longdouble  | 0%     | Conversão int64 ↔ long double             |
+| int128decimal32  | 0%     | Conversão int128 ↔ decimal32              |
+| int128decimal64  | 0%     | Conversão int128 ↔ decimal64              |
+| int128decimal128 | 0%     | Conversão int128 ↔ decimal128             |
+| int128longdouble | 0%     | Conversão int128 ↔ long double            |
+| ipv4checksum     | 0%     | Checksum de pacote (inteiro + shift)      |
+| longdouble       | 0%     | Aritmética long double escalar            |
+| matrixprod       | 0%     | Produto de matrizes (FP escalar, cache)   |
+| nsqrt            | 0%     | Raiz quadrada de Newton (FP iterativo)    |
+| omega            | 0%     | Constante omega (FP convergência)         |
+| parity           | 0%     | Bit parity (inteiro bitwise)              |
+| pi               | 0%     | Cálculo de pi (FP série)                  |
+| prime            | 0%     | Teste de primalidade (inteiro)            |
+| psi              | 0%     | Função digamma (FP transcendental)        |
+| queens           | 0%     | N-Queens (backtracking, branches)         |
+| trig             | 0%     | Funções trigonométricas (FP transcendental)|
+| zeta             | 0%     | Função zeta de Riemann (FP série)         |
+
+**Padrão comum:** operações escalares (1 resultado por instrução), heavy branching, ou uso de unidades x87/SSE escalar. O ITD detecta baixa utilização das unidades vetoriais e classifica como "integer" mesmo quando o workload é puramente FP.
+
+---
+
+## Classe 2 — Vector/SIMD (HW class 1)
+
+Workloads que ativam as unidades vetoriais do processador, seja por auto-vetorização do compilador ou por padrões de acesso a dados que utilizam caminhos SIMD implícitos.
+
+**Características:**
+- Proporção cls2 tipicamente entre 82-98% das amostras. O restante é cls1 (transições durante reclassificação).
+- Classe instável — o hardware reavalia periodicamente e transita brevemente para cls1 antes de voltar a cls2. Tipicamente 200-400 transições em 5s.
+- Muitos métodos classificados como "vector" não contêm instruções SIMD explícitas; a classificação parece ser baseada em heurísticas do hardware sobre padrões de execução (loop tight, acesso sequencial a arrays).
+
+**Métodos stress-ng classificados como classe 2 (40 métodos):**
+
+| Método           | cls2%  | Natureza computacional                    |
+|------------------|--------|-------------------------------------------|
+| logmap           | 99.2%  | Mapa logístico (iteração simples)         |
+| bitops           | 98.4%  | Operações bitwise em loop                 |
+| fletcher16       | 98.4%  | Checksum Fletcher-16 (varredura linear)   |
+| int32            | 98.4%  | Aritmética inteira 32-bit em loop         |
+| fft              | 97.6%  | FFT (acesso vetorial a arrays, twiddle)   |
+| int32double      | 97.6%  | Conversão int32 ↔ double                  |
+| int64float       | 97.6%  | Conversão int64 ↔ float                   |
+| int128           | 97.6%  | Aritmética inteira 128-bit em loop        |
+| rand48           | 97.6%  | PRNG lrand48 (loop tight, pouco branch)   |
+| sieve            | 97.6%  | Crivo de Eratóstenes (varredura de array) |
+| div8             | 96.8%  | Divisão inteira 8-bit                     |
+| div32            | 96.8%  | Divisão inteira 32-bit                    |
+| div64            | 96.8%  | Divisão inteira 64-bit                    |
+| idct             | 96.8%  | IDCT (transformada inversa, array)        |
+| int128double     | 96.8%  | Conversão int128 ↔ double                 |
+| lfsr32           | 96.8%  | LFSR 32-bit (shift register em loop)      |
+| ln2              | 96.8%  | Logaritmo natural de 2 (série)            |
+| loop             | 96.8%  | Loop vazio (nenhuma computação real)       |
+| floatconversion  | 96.1%  | Conversões entre tipos float              |
+| int8             | 96.1%  | Aritmética inteira 8-bit em loop          |
+| jmp              | 96.1%  | Jump/branch intensivo                     |
+| stats            | 96.1%  | Estatísticas sobre array (mean, var)      |
+| collatz          | 96.0%  | Conjectura de Collatz (inteiro iterativo) |
+| gray             | 96.0%  | Código Gray (bitwise em loop)             |
+| crc16            | 95.4%  | CRC-16 (varredura de buffer)              |
+| correlate        | 95.3%  | Correlação (produto interno de arrays)    |
+| dither           | 95.3%  | Dithering de imagem (varredura 2D)        |
+| int64            | 95.3%  | Aritmética inteira 64-bit em loop         |
+| intconversion    | 95.2%  | Conversões entre tipos inteiros           |
+| explog           | 94.5%  | Exponencial/logaritmo (transcendental)    |
+| int16            | 94.5%  | Aritmética inteira 16-bit em loop         |
+| rand             | 94.4%  | PRNG rand() em loop                       |
+| rgb              | 94.5%  | Conversão de espaço de cor (array)        |
+| sqrt             | 94.5%  | Raiz quadrada (FP, loop)                  |
+| int32float       | 93.0%  | Conversão int32 ↔ float                   |
+| cfloat           | 92.9%  | Aritmética complex float                  |
+| int128float      | 92.3%  | Conversão int128 ↔ float                  |
+| union            | 92.1%  | Acesso via union (type punning)           |
+| int64double      | 91.4%  | Conversão int64 ↔ double                  |
+| phi              | 86.8%  | Razão áurea (convergência rápida em loop) |
+
+**Padrão comum:** loops tight com pouco branching, varredura sequencial de arrays, ou operações que o compilador pode auto-vetorizar. A classificação NÃO exige instruções AVX/SSE explícitas — `collatz`, `jmp`, `loop` são puramente escalares mas recebem classe 2.
+
+**Nota:** `explog` era classificado como classe 1 em medições anteriores via /proc/PID/sched (ipcc_count). O método via trace_printk revela que é 89% cls2 — a medição por ipcc_count era um snapshot pontual que capturava momentos de transição.
+
+---
+
+## Classe 3 — Não documentada (HW class 2)
+
+Classe não mencionada na documentação pública dos patches de Ricardo Neri.
+
+**Características:**
+- Observada apenas no método `hamming` (distância de Hamming — operações popcount/bitwise).
+- Distribuição (filtrada por PID): 43.8% cls2, 53.1% cls3, 3.1% cls1.
+- Altamente instável — o hardware oscila constantemente entre classe 2 e 3.
+- `cls1` aparece brevemente durante transições cls2↔cls3.
+
+**Classe 4 (HW class 3) — Não observada.** Nenhum workload testado, incluindo micro-benchmarks customizados com AVX2, FMA, BMI2, VNNI e POPCNT, produziu classificação acima de 3. A classe 4 provavelmente não existe neste hardware (Raptor Lake-P) ou requer instruções não disponíveis (AVX-512, AMX).
+
+**Investigação: o que causa classe 3?**
+
+Testamos micro-benchmarks customizados (C com intrinsics), todos filtrados por PID do processo:
+
+| Workload              | cls1   | cls2   | cls3  | total | cls2%  | cls3%  | Categoria           |
+|-----------------------|--------|--------|-------|-------|--------|--------|---------------------|
+| **hamming** (ref.)    | 2      | 118    | 92    | 212   | 55.6%  | **43.3%** | stress-ng        |
+| **rand48** (ref.)     | 3      | 210    | 0     | 213   | 98.5%  | 0%     | stress-ng           |
+| **div16** (ref.)      | 211    | 0      | 0     | 211   | 0%     | 0%     | stress-ng           |
+| xor_loop              | 2245   | 2404   | 0     | 4649  | 51.7%  | 0%     | Decomposição        |
+| xor_popcnt            | 2205   | 2412   | 0     | 4617  | 52.2%  | 0%     | Decomposição        |
+| xor_popcnt_branch     | 2390   | 2241   | 0     | 4631  | 48.3%  | 0%     | Decomposição        |
+| hamming_array         | 2244   | 2421   | 1     | 4666  | 51.8%  | 0%     | Decomposição        |
+| popcnt_loop           | 2161   | 2426   | 0     | 4587  | 52.8%  | 0%     | Instrução            |
+| avx2_fma (256-bit)    | 2410   | 2165   | 0     | 4575  | 47.3%  | 0%     | SIMD explícito       |
+| avx2_int (256-bit)    | 2217   | 2185   | 0     | 4402  | 49.6%  | 0%     | SIMD explícito       |
+| bmi2_loop (PEXT/PDEP) | 2200   | 2415   | 0     | 4615  | 52.3%  | 0%     | Instrução            |
+| bitmanip (POPCNT+CLZ) | 2242   | 2401   | 0     | 4643  | 51.7%  | 0%     | Instrução            |
+| aesni (encrypt)       | 2357   | 2240   | 0     | 4597  | 48.7%  | 0%     | Cripto               |
+| crc32 (SSE4.2 hw)     | 2242   | 2433   | 0     | 4675  | 52.0%  | 0%     | Cripto               |
+| sha-ni (SHA-256)      | 2599   | 2214   | 0     | 4813  | 46.0%  | 0%     | Cripto               |
+| clmul (GCM)           | 2446   | 2233   | 0     | 4679  | 47.7%  | 0%     | Cripto               |
+| vnni (AVX2 mullo)     | 2373   | 2205   | 0     | 4578  | 48.1%  | 0%     | SIMD explícito       |
+| mix popcnt+crc32      | 2229   | 2370   | 0     | 4599  | 51.5%  | 0%     | Misto                |
+
+**Observações:**
+
+1. **Classe 3 é exclusiva do `hamming` do stress-ng.** Nenhum micro-benchmark — incluindo réplicas exatas das operações do hamming (xor_popcnt_branch) — reproduziu cls3. A implementação interna do stress-ng tem alguma particularidade (stride de memória, inline assembly, ou interação com o compilador) que ativa uma assinatura de execução única.
+
+2. **Classe 4 não existe** em Raptor Lake-P. Testamos AES-NI, SHA-NI, CLMUL, CRC32-HW, AVX2 FMA, AVX2 int, BMI2, VNNI — nenhum produziu classificação acima de 3.
+
+3. **Todos os micro-benchmarks customizados ficam ~50% cls1 / ~50% cls2**, independente de usar POPCNT, AVX2, AES-NI ou XOR puro. Isso contrasta com stress-ng (rand48 = 98.5% cls2, div16 = 0% cls2). A diferença de comportamento pode estar relacionada à estrutura do stress-ng (signal handlers, loops de controle) que modula o padrão de execução de forma que o ITD consiga classificar com confiança.
+
+4. **SIMD explícito não garante cls2.** AVX2 FMA (47.3%), SHA-NI (46.0%) e CLMUL (47.7%) ficam abaixo de 50% cls2. Instruções criptográficas e vetoriais não têm classe ITD dedicada.
+
+5. **Taxa de amostragem difere:** stress-ng recebe ~42 classificações/s, micro-benchmarks recebem ~920/s. O ITD reclassifica mais frequentemente workloads com padrão de execução instável (os ~50/50), enquanto workloads estáveis (div16, rand48) são reclassificados com menos frequência.
+
+---
+
+## Efeito do Nível de Otimização na Classificação
+
+Testamos se a auto-vetorização do compilador (-O2/-O3) explica a diferença entre stress-ng (classificação polarizada) e binários custom (~50/50). Quatro workloads compilados em 6 níveis de otimização, todos com PID filtering, 5s no P-core 0:
+
+| Workload / -O level            | cls1   | cls2   | total | cls2%  |
+|---------------------------------|--------|--------|-------|--------|
+| **stress-ng rand48 (ref.)**     | 11     | 200    | 211   | **94.7%** |
+| opt_rand48 -O0                  | 2020   | 2356   | 4376  | 53.8%  |
+| opt_rand48 -O1                  | 2121   | 2353   | 4474  | 52.5%  |
+| opt_rand48 -O2                  | 2181   | 2315   | 4496  | 51.4%  |
+| opt_rand48 -O3                  | 2136   | 2351   | 4487  | 52.3%  |
+| opt_rand48 -O2 -fno-tree-vec   | 2219   | 2361   | 4580  | 51.5%  |
+| opt_rand48 -O3 -mavx2 -ffast   | 2202   | 2341   | 4543  | 51.5%  |
+| **stress-ng collatz (ref.)**    | 2      | 210    | 212   | **99.0%** |
+| opt_collatz -O0                 | 2200   | 2181   | 4381  | 49.7%  |
+| opt_collatz -O2                 | 2094   | 2354   | 4448  | 52.9%  |
+| opt_collatz -O3                 | 2086   | 2359   | 4445  | 53.0%  |
+| **stress-ng div16 (ref.)**      | 211    | 0      | 211   | **0%** |
+| opt_div16 -O0                   | 2026   | 2367   | 4393  | 53.8%  |
+| opt_div16 -O2                   | 2264   | 2153   | 4417  | 48.7%  |
+| opt_div16 -O3                   | 2282   | 2173   | 4455  | 48.7%  |
+| opt_div16 -O2 -fno-tree-vec    | 2279   | 2176   | 4455  | 48.8%  |
+| opt_fftlike -O0                 | 2137   | 2344   | 4481  | 52.3%  |
+| opt_fftlike -O3 -mavx2 -ffast  | 2128   | 2342   | 4470  | 52.3%  |
+
+**Conclusões:**
+
+1. **Nível de otimização não afeta a classificação ITD.** -O0, -O2, -O3, e mesmo `-O3 -mavx2 -ffast-math` produzem resultados idênticos (~50% cls2) para todos os workloads. Auto-vetorização do compilador não é o fator determinante.
+
+2. **`-fno-tree-vectorize` não faz diferença.** Desabilitar explicitamente a vetorização do GCC não muda o comportamento: opt_rand48 -O2 (51.4%) vs -O2 -fno-tree-vectorize (51.5%).
+
+3. **opt_div16 é o caso mais revelador.** stress-ng div16 = 0% cls2 (puro cls1). Mas um loop idêntico de divisão inteira de 16 bits compilado com qualquer -O produz ~49% cls2. O nível de otimização não consegue replicar a classificação cls1 pura do stress-ng.
+
+4. **A estrutura do stress-ng, não o código compilado, determina a classificação.** A hipótese de que -O2 auto-vetoriza → cls2 é refutada. O stress-ng tem mecanismos internos (signal handlers, checkpointing, loop structure com setjmp/longjmp) que modulam o padrão de execução de forma que o ITD consegue classificar com confiança. Binários simples com loops tight produzem um padrão de execução ambíguo para o ITD.
+
+---
+
+## Efeito do Sibling HT na Classificação
+
+Testado com ambos os threads lógicos do mesmo P-core físico (CPU 0 + CPU 1) ocupados simultaneamente:
+
+| Cenário                      | Esperado | CPU 0    | CPU 1    | cls2% cpu0 | cls2% cpu1 |
+|------------------------------|----------|----------|----------|------------|------------|
+| cls1 + cls1 (div16+div16)   | 1, 1     | **cls1** | **cls1** | 0%         | 0%         |
+| cls2 + cls2 (rand48+rand48) | 2, 2     | **cls1** | **cls1** | 0%         | 0%         |
+| cls1 + cls2 (div16+rand48)  | 1, 2     | **cls1** | **cls1** | 0%         | 0%         |
+| cls2 + cls1 (rand48+div16)  | 2, 1     | **cls1** | **cls1** | 0%         | 0%         |
+
+**Resultado:** regressão total. Com sibling HT ativo, 100% das amostras são classe 1 — zero amostras classe 2 em qualquer cenário. O ITD mantém contadores por core físico, não por thread lógico. A pressão combinada dos dois threads elimina completamente o sinal vetorial.
+
+**Implicação:** a distinção entre classes 1, 2 e 3 só é confiável com HT desabilitado ou com o sibling ocioso. Em workloads reais com HT ativo, qualquer classe acima de 1 é essencialmente inalcançável.
+
+---
+
+## Estabilidade da Classificação (transições em 5s)
+
+O número de transições indica quantas vezes a classe muda entre amostras consecutivas ao longo de 5s (~5200 amostras):
+
+| Método     | cls1   | cls2   | cls3   | total | cls2%  | Transições | Comportamento              |
+|------------|--------|--------|--------|-------|--------|------------|----------------------------|
+| div16      | 5225   | 2      | 0      | 5227  | 0%     | 4          | Ultra-estável (cls1)       |
+| matrixprod | 5279   | 3      | 0      | 5282  | 0%     | 6          | Ultra-estável (cls1)       |
+| rand48     | 237    | 4979   | 0      | 5216  | 95.4%  | 250        | Estável cls2, ~50 trans/s  |
+| jmp        | 281    | 4960   | 0      | 5241  | 94.6%  | 239        | Estável cls2, ~48 trans/s  |
+| fft        | 273    | 4965   | 0      | 5238  | 94.7%  | 271        | Estável cls2, ~54 trans/s  |
+| int8       | 323    | 4967   | 0      | 5290  | 93.8%  | 287        | Estável cls2, ~57 trans/s  |
+| collatz    | 219    | 4987   | 0      | 5206  | 95.7%  | 315        | Moderado cls2, ~63 trans/s |
+| sieve      | 271    | 4966   | 0      | 5237  | 94.8%  | 309        | Moderado cls2, ~62 trans/s |
+| phi        | 337    | 4959   | 0      | 5296  | 93.6%  | 343        | Moderado cls2, ~69 trans/s |
+| loop       | 324    | 4961   | 0      | 5285  | 93.8%  | 355        | Moderado cls2, ~71 trans/s |
+| cfloat     | 409    | 4858   | 0      | 5267  | 92.2%  | 395        | Menos estável, ~79 trans/s |
+| hamming    | 275    | 2416   | 2569   | 5260  | 45.9%  | 2349       | Caótico, ~470 trans/s      |
+
+**Observações:**
+- Classe 1 é ordens de magnitude mais estável que classe 2 (4-6 transições vs 250-400).
+- Dentro de cls2, há gradação: rand48/jmp são mais estáveis (~250 trans) que cfloat (~395 trans).
+- hamming é caótico: quase toda amostra muda de classe, tornando qualquer classificação estável impossível.
+- O viés do hardware para cls1 é forte: ~5-8% do tempo, mesmo workloads claramente cls2 transitam brevemente para cls1.
+
+---
+
+## Imprecisões Identificadas
+
+1. **Nomenclatura enganosa:** "vector/AVX" (classe 2) não exige instruções SIMD. Métodos puramente inteiros como `collatz`, `jmp`, `loop` recebem classe 2.
+
+2. **FP escalar é "integer":** `float`, `double`, `longdouble`, funções trigonométricas e transcendentais são todas classe 1. O nome "integer" não reflete a realidade.
+
+3. **Classe 3 não documentada:** existe mas é específica ao padrão `hamming`. POPCNT puro NÃO a atinge (fica em cls2). Os patches de Neri não tratam cls3 de forma distinta.
+
+4. **HT invalida classe 2:** com sibling ativo, a granularidade por-core do ITD impede a classificação correta — 0% cls2 em todos os cenários testados, tornando a distinção cls1/cls2 inútil com Hyper-Threading.
+
+5. **Instabilidade inerente da classe 2:** mesmo os métodos mais estáveis de cls2 têm ~250 transições em 5s (~50/s). Um scheduler que reagir a cada mudança tomará decisões de migração excessivas.
+
+6. **Medição por ipcc_count (proc/sched) é imprecisa:** o campo ipcc_count é um snapshot pontual que pode capturar um momento de transição. O método via trace_printk (~1000 amostras/s) revela que `explog` é 89% cls2 apesar de ter sido classificado como cls1 anteriormente. Trace contínuo é necessário para classificação correta.
+
+7. **SIMD explícito é indistinguível para o ITD:** AVX2 FMA (47%), SHA-NI (46%), AES-NI (49%), CLMUL (48%) — todos ~50% cls2, igual a um XOR loop escalar (52%). Micro-benchmarks com intrinsics SIMD explícitos não são classificados como "vector". Apenas workloads via stress-ng (que inclui estrutura de controle) produzem classificação polarizada (rand48=98.5% cls2, div16=0% cls2).
+
+8. **Classe 4 não existe neste hardware:** nenhum workload testado (incluindo AVX2, FMA, BMI2, VNNI, POPCNT, AES-NI, SHA-NI, CLMUL e combinações) produziu classificação acima de 3. Raptor Lake-P aparenta suportar apenas 3 classes ativas (1-3).
+
+9. **Classe 3 é irreproduzível:** mesmo replicando as operações exatas do hamming do stress-ng (XOR + POPCNT + branch + array), a classe 3 não aparece em micro-benchmarks customizados. A classificação cls3 depende de alguma particularidade da implementação do stress-ng, não de um padrão de instrução identificável.
+
+10. **Nível de otimização não explica a classificação:** -O0, -O2, -O3 e `-O3 -mavx2 -ffast-math` produzem resultados idênticos (~50% cls2) para binários custom. Auto-vetorização do GCC não é o fator que faz stress-ng receber classificação polarizada. O caso mais extremo: div16 é 0% cls2 no stress-ng mas ~49% cls2 em qualquer nível de otimização compilado externamente.
+
+  classe   método      P-core ops/s E-core ops/s      P/E
+  cls1     ackermann         3045.50      2134.27    1.43x
+  cls1     div16             2515.01      1867.00    1.35x
+  cls1     double            2486.79      1404.70    1.77x
+  cls1     matrixprod        3186.55      2851.16    1.12x
+  cls2     collatz           3560.60      1951.42    1.82x
+  cls2     fft               3876.29      1973.20    1.96x
+  cls2     int32             3862.22      2378.60    1.62x
+  cls2     rand48            2503.29       826.71    3.03x

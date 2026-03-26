@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dmesg)",
+      "Bash(sudo dmesg)",
+      "Bash(sudo journalctl -k --no-pager)",
+      "Read(//sys/devices/system/cpu/cpu0/thermal_throttle/**)",
+      "WebFetch(domain:lkml.org)"
+    ]
+  }
+}
