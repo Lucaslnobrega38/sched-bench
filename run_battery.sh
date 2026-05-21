@@ -17,35 +17,27 @@ KERNEL_TAG="${KERNEL_TAG:-$(uname -r)}"
 WARMUP_SEC=5
 
 _detect_hybrid_topology() {
-    local max_perf=0 cpu val total
-
+    local total cpu val f online_f
     total=$(nproc --all)
 
+    local pcores="" ecores="" found=0
     for cpu in $(seq 0 "$(( total - 1 ))"); do
-        local f="/sys/devices/system/cpu/cpu${cpu}/acpi_cppc/highest_perf"
-        [[ -r "$f" ]] || continue
-        val=$(< "$f")
-        [[ "$val" -gt "$max_perf" ]] && max_perf="$val"
-    done
-
-    [[ "$max_perf" -eq 0 ]] && die "Topologia híbrida não detectada (acpi_cppc indisponível)"
-
-    local pcores="" ecores=""
-    for cpu in $(seq 0 "$(( total - 1 ))"); do
-        local online_f="/sys/devices/system/cpu/cpu${cpu}/online"
-        # cpu0 não tem arquivo /online; demais precisam estar ativos
+        online_f="/sys/devices/system/cpu/cpu${cpu}/online"
         if [[ "$cpu" -ne 0 ]] && [[ "$(cat "$online_f" 2>/dev/null)" != "1" ]]; then
             continue
         fi
-        local f="/sys/devices/system/cpu/cpu${cpu}/acpi_cppc/highest_perf"
+        f="/sys/devices/system/cpu/cpu${cpu}/acpi_cppc/highest_perf"
         [[ -r "$f" ]] || continue
         val=$(< "$f")
-        if [[ "$val" -eq "$max_perf" ]]; then
+        found=1
+        if [[ "$val" -gt 50 ]]; then
             pcores="${pcores:+$pcores,}$cpu"
         else
             ecores="${ecores:+$ecores,}$cpu"
         fi
     done
+
+    [[ $found -eq 0 ]] && die "Topologia híbrida não detectada (acpi_cppc indisponível)"
 
     PCORES="$pcores"
     ECORES="$ecores"

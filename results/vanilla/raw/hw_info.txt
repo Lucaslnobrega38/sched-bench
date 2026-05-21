@@ -1,19 +1,19 @@
 Intel(R) Core(TM) i9-14900HX
-  CPU0 (P-core esperado): acpi_highest_perf=72
-  CPU1 (P-core esperado): acpi_highest_perf=72
-  CPU2 (P-core esperado): acpi_highest_perf=72
-  CPU3 (P-core esperado): acpi_highest_perf=72
-  CPU16 (E-core esperado): acpi_highest_perf=41
-  CPU17 (E-core esperado): acpi_highest_perf=41
-  CPU18 (E-core esperado): acpi_highest_perf=41
-  CPU19 (E-core esperado): acpi_highest_perf=41
+  CPU0 (P): acpi_highest_perf=72
+  CPU1 (P): acpi_highest_perf=72
+  CPU2 (P): acpi_highest_perf=72
+  CPU3 (P): acpi_highest_perf=72
+  CPU16 (E): acpi_highest_perf=41
+  CPU17 (E): acpi_highest_perf=41
+  CPU18 (E): acpi_highest_perf=41
+  CPU19 (E): acpi_highest_perf=41
   CPU0: itmt_prio=72
   CPU1: itmt_prio=72
   CPU16: itmt_prio=41
   CPU17: itmt_prio=41
-[    0.884544] intel-hfi: ITMT support enabled successfully
+[    0.880688] intel-hfi: ITMT support enabled successfully
 === uname ===
-Linux chico-Predator-PHN16-72 7.0.0-rc1+ #1 SMP PREEMPT_DYNAMIC Mon Apr 27 16:13:48 -03 2026 x86_64 x86_64 x86_64 GNU/Linux
+Linux chico-Predator-PHN16-72 7.0.0-rc1+ #4 SMP PREEMPT_DYNAMIC Wed May 13 17:17:38 -03 2026 x86_64 x86_64 x86_64 GNU/Linux
 === cpuinfo ===
 processor	: 0
 vendor_id	: GenuineIntel
@@ -22,7 +22,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 800.230
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -78,7 +78,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 600.000
+cpu MHz		: 800.627
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -134,7 +134,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 600.130
+cpu MHz		: 798.746
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -190,7 +190,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 600.189
+cpu MHz		: 695.274
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -246,7 +246,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.319
+cpu MHz		: 800.638
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -302,7 +302,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1436.479
+cpu MHz		: 800.630
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -358,7 +358,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1437.618
+cpu MHz		: 1091.065
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -414,7 +414,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1204.213
+cpu MHz		: 600.188
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -470,7 +470,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1635.332
+cpu MHz		: 799.544
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -498,7 +498,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 798.856
+cpu MHz		: 1671.064
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -526,7 +526,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.210
+cpu MHz		: 801.353
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -554,7 +554,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 799.735
+cpu MHz		: 1906.800
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -582,7 +582,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1869.530
+cpu MHz		: 1069.787
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -610,7 +610,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1180.369
+cpu MHz		: 1053.625
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -638,7 +638,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1090.168
+cpu MHz		: 1900.016
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -666,7 +666,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 945.312
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -694,7 +694,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 810.072
+cpu MHz		: 1367.898
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -722,7 +722,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 835.580
+cpu MHz		: 799.755
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -750,7 +750,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1601.912
+cpu MHz		: 800.605
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -778,7 +778,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1209.540
+cpu MHz		: 799.498
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -806,7 +806,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.151
+cpu MHz		: 1353.659
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -834,7 +834,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 801.622
+cpu MHz		: 800.816
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -862,7 +862,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 799.527
+cpu MHz		: 800.071
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -890,7 +890,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.355
+cpu MHz		: 800.471
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -957,7 +957,7 @@ power management:
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Host: chico-Predator-PHN16-72                                                                                                                                                                                                                                                                                                                                                                                                                                       │
 │                                                                                                                                                                                                                                                                                                                                                                                                                                                                     │
-│ Date: Mon 27 Apr 2026 04:29:42 PM -03                                                                                                                                                                                                                                                                                                                                                                                                                               │
+│ Date: Wed 13 May 2026 05:24:53 PM -03                                                                                                                                                                                                                                                                                                                                                                                                                               │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 === scheduler features ===
 PLACE_LAG PLACE_DEADLINE_INITIAL PLACE_REL_DEADLINE RUN_TO_PARITY PREEMPT_SHORT NO_NEXT_BUDDY PICK_BUDDY CACHE_HOT_BUDDY DELAY_DEQUEUE DELAY_ZERO WAKEUP_PREEMPTION NO_HRTICK NO_HRTICK_DL NONTASK_CAPACITY TTWU_QUEUE SIS_UTIL NO_WARN_DOUBLE_CLOCK RT_PUSH_IPI NO_RT_RUNTIME_SHARE NO_LB_MIN ATTACH_AGE_LOAD WA_IDLE WA_WEIGHT WA_BIAS UTIL_EST NO_LATENCY_WARN NI_RANDOM 
@@ -1027,21 +1027,21 @@ PLACE_LAG PLACE_DEADLINE_INITIAL PLACE_REL_DEADLINE RUN_TO_PARITY PREEMPT_SHORT 
 1
 1
 Intel(R) Core(TM) i9-14900HX
-  CPU0 (P-core esperado): acpi_highest_perf=72
-  CPU1 (P-core esperado): acpi_highest_perf=72
-  CPU2 (P-core esperado): acpi_highest_perf=72
-  CPU3 (P-core esperado): acpi_highest_perf=72
-  CPU16 (E-core esperado): acpi_highest_perf=41
-  CPU17 (E-core esperado): acpi_highest_perf=41
-  CPU18 (E-core esperado): acpi_highest_perf=41
-  CPU19 (E-core esperado): acpi_highest_perf=41
+  CPU0 (P): acpi_highest_perf=72
+  CPU1 (P): acpi_highest_perf=72
+  CPU2 (P): acpi_highest_perf=72
+  CPU3 (P): acpi_highest_perf=72
+  CPU16 (E): acpi_highest_perf=41
+  CPU17 (E): acpi_highest_perf=41
+  CPU18 (E): acpi_highest_perf=41
+  CPU19 (E): acpi_highest_perf=41
   CPU0: itmt_prio=72
   CPU1: itmt_prio=72
   CPU16: itmt_prio=41
   CPU17: itmt_prio=41
-[    0.889827] intel-hfi: ITMT support enabled successfully
+[    0.880688] intel-hfi: ITMT support enabled successfully
 === uname ===
-Linux chico-Predator-PHN16-72 7.0.0-rc1+ #1 SMP PREEMPT_DYNAMIC Mon Apr 27 16:13:48 -03 2026 x86_64 x86_64 x86_64 GNU/Linux
+Linux chico-Predator-PHN16-72 7.0.0-rc1+ #4 SMP PREEMPT_DYNAMIC Wed May 13 17:17:38 -03 2026 x86_64 x86_64 x86_64 GNU/Linux
 === cpuinfo ===
 processor	: 0
 vendor_id	: GenuineIntel
@@ -1050,7 +1050,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 600.174
+cpu MHz		: 977.605
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1162,7 +1162,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.254
+cpu MHz		: 917.770
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1218,7 +1218,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1452.920
+cpu MHz		: 4213.466
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1274,7 +1274,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 5133.084
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1330,7 +1330,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.444
+cpu MHz		: 2801.122
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1386,7 +1386,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 3607.672
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1442,7 +1442,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1733.499
+cpu MHz		: 800.000
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1470,7 +1470,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 800.426
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1498,7 +1498,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 799.743
+cpu MHz		: 1125.701
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1526,7 +1526,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 799.372
+cpu MHz		: 1250.906
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1554,7 +1554,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 799.213
+cpu MHz		: 3919.334
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1582,7 +1582,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 1262.307
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1610,7 +1610,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 801.095
+cpu MHz		: 799.268
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1638,7 +1638,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 798.982
+cpu MHz		: 800.000
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1666,7 +1666,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.276
+cpu MHz		: 1355.649
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1694,7 +1694,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1210.000
+cpu MHz		: 798.722
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1722,7 +1722,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 799.302
+cpu MHz		: 1183.946
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1750,7 +1750,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 801.306
+cpu MHz		: 3845.562
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1778,7 +1778,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 799.736
+cpu MHz		: 977.433
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1806,7 +1806,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 1237.682
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1834,7 +1834,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 2004.605
+cpu MHz		: 3803.454
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1862,7 +1862,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1999.986
+cpu MHz		: 800.000
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1890,7 +1890,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1899.861
+cpu MHz		: 799.960
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1918,7 +1918,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1997.641
+cpu MHz		: 797.392
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -1985,7 +1985,7 @@ power management:
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Host: chico-Predator-PHN16-72                                                                                                                                                                                                                                                                                                                                                                                                                                       │
 │                                                                                                                                                                                                                                                                                                                                                                                                                                                                     │
-│ Date: Mon 27 Apr 2026 04:36:52 PM -03                                                                                                                                                                                                                                                                                                                                                                                                                               │
+│ Date: Wed 13 May 2026 05:27:21 PM -03                                                                                                                                                                                                                                                                                                                                                                                                                               │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 === scheduler features ===
 PLACE_LAG PLACE_DEADLINE_INITIAL PLACE_REL_DEADLINE RUN_TO_PARITY PREEMPT_SHORT NO_NEXT_BUDDY PICK_BUDDY CACHE_HOT_BUDDY DELAY_DEQUEUE DELAY_ZERO WAKEUP_PREEMPTION NO_HRTICK NO_HRTICK_DL NONTASK_CAPACITY TTWU_QUEUE SIS_UTIL NO_WARN_DOUBLE_CLOCK RT_PUSH_IPI NO_RT_RUNTIME_SHARE NO_LB_MIN ATTACH_AGE_LOAD WA_IDLE WA_WEIGHT WA_BIAS UTIL_EST NO_LATENCY_WARN NI_RANDOM 
@@ -2055,21 +2055,21 @@ PLACE_LAG PLACE_DEADLINE_INITIAL PLACE_REL_DEADLINE RUN_TO_PARITY PREEMPT_SHORT 
 1
 1
 Intel(R) Core(TM) i9-14900HX
-  CPU0 (P-core esperado): acpi_highest_perf=72
-  CPU1 (P-core esperado): acpi_highest_perf=72
-  CPU2 (P-core esperado): acpi_highest_perf=72
-  CPU3 (P-core esperado): acpi_highest_perf=72
-  CPU16 (E-core esperado): acpi_highest_perf=41
-  CPU17 (E-core esperado): acpi_highest_perf=41
-  CPU18 (E-core esperado): acpi_highest_perf=41
-  CPU19 (E-core esperado): acpi_highest_perf=41
+  CPU0 (P): acpi_highest_perf=72
+  CPU1 (P): acpi_highest_perf=72
+  CPU2 (P): acpi_highest_perf=72
+  CPU3 (P): acpi_highest_perf=72
+  CPU16 (E): acpi_highest_perf=41
+  CPU17 (E): acpi_highest_perf=41
+  CPU18 (E): acpi_highest_perf=41
+  CPU19 (E): acpi_highest_perf=41
   CPU0: itmt_prio=72
   CPU1: itmt_prio=72
   CPU16: itmt_prio=41
   CPU17: itmt_prio=41
-[    0.937773] intel-hfi: ITMT support enabled successfully
+[    0.880688] intel-hfi: ITMT support enabled successfully
 === uname ===
-Linux chico-Predator-PHN16-72 7.0.0-rc1+ #1 SMP PREEMPT_DYNAMIC Mon Apr 27 16:13:48 -03 2026 x86_64 x86_64 x86_64 GNU/Linux
+Linux chico-Predator-PHN16-72 7.0.0-rc1+ #4 SMP PREEMPT_DYNAMIC Wed May 13 17:17:38 -03 2026 x86_64 x86_64 x86_64 GNU/Linux
 === cpuinfo ===
 processor	: 0
 vendor_id	: GenuineIntel
@@ -2078,7 +2078,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1282.657
+cpu MHz		: 709.791
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2134,7 +2134,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 800.324
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2190,7 +2190,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1357.774
+cpu MHz		: 800.680
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2302,7 +2302,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 600.360
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2358,7 +2358,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.828
+cpu MHz		: 1591.088
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2414,7 +2414,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.294
+cpu MHz		: 1713.689
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2470,7 +2470,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 2144.266
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2526,7 +2526,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 964.320
+cpu MHz		: 799.944
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2554,7 +2554,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1071.823
+cpu MHz		: 799.244
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2582,7 +2582,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1619.385
+cpu MHz		: 800.622
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2610,7 +2610,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 2025.888
+cpu MHz		: 800.366
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2638,7 +2638,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1904.619
+cpu MHz		: 800.000
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2666,7 +2666,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 798.992
+cpu MHz		: 1540.538
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2694,7 +2694,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 997.804
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2722,7 +2722,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 1012.370
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2750,7 +2750,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1172.893
+cpu MHz		: 800.000
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2778,7 +2778,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1173.348
+cpu MHz		: 800.000
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2806,7 +2806,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1559.012
+cpu MHz		: 800.715
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2834,7 +2834,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 1240.972
+cpu MHz		: 800.241
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2862,7 +2862,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 1119.674
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2890,7 +2890,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.362
+cpu MHz		: 1242.987
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -2946,7 +2946,7 @@ model		: 183
 model name	: Intel(R) Core(TM) i9-14900HX
 stepping	: 1
 microcode	: 0x133
-cpu MHz		: 800.000
+cpu MHz		: 1011.618
 cache size	: 36864 KB
 physical id	: 0
 siblings	: 32
@@ -3013,7 +3013,7 @@ power management:
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Host: chico-Predator-PHN16-72                                                                                                                                                                                                                                                                                                                                                                                                                                       │
 │                                                                                                                                                                                                                                                                                                                                                                                                                                                                     │
-│ Date: Tue 28 Apr 2026 09:34:35 AM -03                                                                                                                                                                                                                                                                                                                                                                                                                               │
+│ Date: Wed 13 May 2026 05:38:26 PM -03                                                                                                                                                                                                                                                                                                                                                                                                                               │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 === scheduler features ===
 PLACE_LAG PLACE_DEADLINE_INITIAL PLACE_REL_DEADLINE RUN_TO_PARITY PREEMPT_SHORT NO_NEXT_BUDDY PICK_BUDDY CACHE_HOT_BUDDY DELAY_DEQUEUE DELAY_ZERO WAKEUP_PREEMPTION NO_HRTICK NO_HRTICK_DL NONTASK_CAPACITY TTWU_QUEUE SIS_UTIL NO_WARN_DOUBLE_CLOCK RT_PUSH_IPI NO_RT_RUNTIME_SHARE NO_LB_MIN ATTACH_AGE_LOAD WA_IDLE WA_WEIGHT WA_BIAS UTIL_EST NO_LATENCY_WARN NI_RANDOM 
