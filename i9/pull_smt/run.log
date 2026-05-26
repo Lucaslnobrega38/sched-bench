@@ -1,0 +1,69 @@
+[0;32m[15:53:57][0m =========================================================
+[0;32m[15:53:57][0m  BATERIA SCHEDULER — kernel: 7.0.0-rc1+
+[0;32m[15:53:57][0m  Runs por teste: 100
+[0;32m[15:53:57][0m  Output: ./results/pull_smt
+[0;32m[15:53:57][0m  P-cores lógicos: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]  (8 físicos)
+[0;32m[15:53:57][0m  E-cores: [16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+[0;32m[15:53:57][0m  Total CPUs: 32
+[0;32m[15:53:57][0m =========================================================
+[0;32m[15:53:57][0m === FASE 0: PREFLIGHT ===
+[0;32m[15:53:57][0m Topologia detectada: P-cores=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] E-cores=[16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+[0;32m[15:53:57][0m CPU: Intel(R) Core(TM) i9-14900HX
+[0;32m[15:53:57][0m Prioridades ITMT:
+[0;32m[15:53:59][0m Fixando CPU governor em 'performance'...
+[0;32m[15:53:59][0m Governor: powersave → performance
+[0;32m[15:53:59][0m Intel turbo: desativado
+[0;32m[15:53:59][0m Aquecimento (5s)...
+[0;32m[15:54:04][0m Preflight concluído.
+[0;32m[15:54:04][0m === FASE 1: PLACEMENT ===
+[0;32m[15:54:04][0m   cls2: rand48  |  cls1: div16
+[0;32m[15:54:04][0m   P-cores físicos: 8  |  Total CPUs: 32
+[0;32m[15:54:04][0m   placement runs = 200 (2× --runs)
+[0;32m[15:54:04][0m   [placement] relaxed: 8 cls2(rand48) + 8 cls1(div16) × 200 runs
+[0;32m[15:54:06][0m Restaurando governor → powersave
+[0;32m[15:54:06][0m Intel turbo restaurado.
+[0;32m[15:54:13][0m =========================================================
+[0;32m[15:54:13][0m  BATERIA SCHEDULER — kernel: 7.0.0-rc1+
+[0;32m[15:54:13][0m  Runs por teste: 100
+[0;32m[15:54:13][0m  Output: ./results/pull_smt
+[0;32m[15:54:13][0m  P-cores lógicos: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]  (8 físicos)
+[0;32m[15:54:13][0m  E-cores: [16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+[0;32m[15:54:13][0m  Total CPUs: 32
+[0;32m[15:54:13][0m =========================================================
+[0;32m[15:54:13][0m === FASE 0: PREFLIGHT ===
+[0;32m[15:54:13][0m Topologia detectada: P-cores=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] E-cores=[16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+[0;32m[15:54:13][0m CPU: Intel(R) Core(TM) i9-14900HX
+[0;32m[15:54:13][0m Prioridades ITMT:
+[0;32m[15:54:15][0m Fixando CPU governor em 'performance'...
+[0;32m[15:54:15][0m Governor: powersave → performance
+[0;32m[15:54:15][0m Intel turbo: desativado
+[0;32m[15:54:15][0m Aquecimento (5s)...
+[0;32m[15:54:21][0m Preflight concluído.
+[0;32m[15:54:21][0m === FASE 1: PLACEMENT ===
+[0;32m[15:54:21][0m   cls2: rand48  |  cls1: div16
+[0;32m[15:54:21][0m   P-cores físicos: 8  |  Total CPUs: 32
+[0;32m[15:54:21][0m   placement runs = 200 (2× --runs)
+[0;32m[15:54:21][0m   [placement] relaxed: 8 cls2(rand48) + 8 cls1(div16) × 200 runs
+[0;32m[17:34:29][0m   [placement] relaxed: 200 runs → ./results/pull_smt/placement/relaxed/
+[0;32m[17:34:29][0m   [placement] contention: 8 cls2(rand48) + 24 cls1(div16) × 200 runs
+[0;32m[19:14:43][0m   [placement] contention: 200 runs → ./results/pull_smt/placement/contention/
+[0;32m[19:14:43][0m Fase 1 concluída → ./results/pull_smt/placement/
+[0;32m[19:14:43][0m === FASE 2: LATÊNCIA ===
+[0;32m[19:14:43][0m   [schbench] baseline — 4 workers, sem contention (run 1)
+[0;32m[19:39:45][0m   [schbench] baseline: ./results/pull_smt/latency/schbench_baseline/percentiles.csv
+[0;32m[19:39:45][0m Fase 2 concluída → ./results/pull_smt/latency/
+[0;32m[19:39:45][0m === FASE 3: THROUGHPUT ===
+[0;32m[19:39:45][0m   cls2: rand48  |  cls1: div16
+[0;32m[19:39:45][0m   P-cores físicos: 8  |  Total CPUs: 32
+[0;32m[19:39:45][0m   [throughput] c2_alone: 8 cls2 + 0 cls1, 12s
+[0;32m[19:59:47][0m   [throughput] c2_alone → ./results/pull_smt/throughput/c2_alone/
+[0;32m[19:59:47][0m   [throughput] c2_contention: 8 cls2 + 24 cls1, 12s
+[0;32m[20:24:49][0m   [throughput] c2_contention → ./results/pull_smt/throughput/c2_contention/
+[0;32m[20:24:49][0m Fase 3 concluída → ./results/pull_smt/throughput/
+[0;32m[20:24:49][0m === RELATÓRIO ===
+[0;32m[20:24:49][0m Relatório: ./results/pull_smt/report.txt
+[0;32m[20:24:49][0m =========================================================
+[0;32m[20:24:49][0m  BATERIA CONCLUÍDA — resultados em: ./results/pull_smt
+[0;32m[20:24:49][0m =========================================================
+[0;32m[20:24:49][0m Restaurando governor → powersave
+[0;32m[20:24:49][0m Intel turbo restaurado.

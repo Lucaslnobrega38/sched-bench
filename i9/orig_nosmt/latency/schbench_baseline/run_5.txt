@@ -1,0 +1,19 @@
+Wakeup Latencies percentiles (usec) runtime 10 (s) (6587 total samples)
+	  50.0th: 9          (1259 samples)
+	  90.0th: 78         (2466 samples)
+	* 99.0th: 97         (568 samples)
+	  99.9th: 258        (52 samples)
+	  min=1, max=776
+Request Latencies percentiles (usec) runtime 10 (s) (6583 total samples)
+	  50.0th: 3948       (2109 samples)
+	  90.0th: 4004       (2388 samples)
+	* 99.0th: 8008       (362 samples)
+	  99.9th: 10576      (51 samples)
+	  min=3866, max=11606
+RPS percentiles (requests) runtime 10 (s) (11 total samples)
+	  20.0th: 239        (3 samples)
+	* 50.0th: 655        (3 samples)
+	  90.0th: 969        (4 samples)
+	  min=237, max=1139
+sched delay: message 0 (usec) worker 9 (usec)
+current rps: 240.96
