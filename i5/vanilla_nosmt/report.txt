@@ -1,0 +1,26 @@
+======================================================
+  RELATÓRIO — 7.0.0-rc1-g07f67f9b1924
+  ter 26 mai 2026 22:19:12 -03
+======================================================
+
+Hardware: 13th Gen Intel(R) Core(TM) i5-1334U
+Kernel:   7.0.0-rc1-g07f67f9b1924
+Runs:     100
+P-cores:  0,2  (2 físicos)
+E-cores:  4,5,6,7,8,9,10,11
+Total CPUs: 12
+
+--- PLACEMENT ---
+  contention: cls2→P=24.7 ± 15.1 (n=200)%  cls1→E=74.7 ± 3.0 (n=200)%
+  relaxed: cls2→P=49.9 ± 25.6 (n=200)%  cls1→E=49.9 ± 25.6 (n=200)%
+
+--- LATÊNCIA (schbench, μs) ---
+  baseline: p50=13968  p90=328  p99=0
+
+--- THROUGHPUT ---
+  c2_alone:
+    ops/s:   1564.5 ± 2.7 (n=100)
+  c2_contention:
+    ops/s:   570.6 ± 101.3 (n=100)
+
+======================================================
