@@ -1,0 +1,38 @@
+Wakeup Latencies percentiles (usec) runtime 10 (s) (19769 total samples)
+	  50.0th: 10         (4567 samples)
+	  90.0th: 90         (7965 samples)
+	* 99.0th: 123        (1718 samples)
+	  99.9th: 145        (172 samples)
+	  min=1, max=246
+Request Latencies percentiles (usec) runtime 10 (s) (19767 total samples)
+	  50.0th: 3924       (5413 samples)
+	  90.0th: 3964       (6803 samples)
+	* 99.0th: 4020       (1313 samples)
+	  99.9th: 8056       (151 samples)
+	  min=3863, max=12723
+RPS percentiles (requests) runtime 10 (s) (11 total samples)
+	  20.0th: 1974       (3 samples)
+	* 50.0th: 1982       (5 samples)
+	  90.0th: 1990       (3 samples)
+	  min=1916, max=1990
+sched delay: message 0 (usec) worker 0 (usec)
+current rps: 1980.64
+Wakeup Latencies percentiles (usec) runtime 15 (s) (29670 total samples)
+	  50.0th: 10         (6873 samples)
+	  90.0th: 89         (11896 samples)
+	* 99.0th: 123        (2578 samples)
+	  99.9th: 147        (265 samples)
+	  min=1, max=246
+Request Latencies percentiles (usec) runtime 15 (s) (29677 total samples)
+	  50.0th: 3924       (8142 samples)
+	  90.0th: 3964       (10273 samples)
+	* 99.0th: 4020       (1918 samples)
+	  99.9th: 8024       (234 samples)
+	  min=3863, max=12723
+RPS percentiles (requests) runtime 15 (s) (16 total samples)
+	  20.0th: 1974       (4 samples)
+	* 50.0th: 1982       (6 samples)
+	  90.0th: 1990       (6 samples)
+	  min=1916, max=1990
+average rps: 1978.47
+sched delay: message 0 (usec) worker 0 (usec)

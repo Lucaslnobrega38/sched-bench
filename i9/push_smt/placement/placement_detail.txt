@@ -1,0 +1,24 @@
+============================================================
+  PLACEMENT CORRECTNESS — Residência por classe IPCC
+  Classe 2 (vector): rand48 → esperado em P-cores
+  Classe 1 (integer): div16 → esperado em E-cores
+============================================================
+
+Cenário: contention  (n=200 runs)
+----------------------------------------
+  cls2 → P-cores:  33.2%  [██████░░░░░░░░░░░░░░]
+  cls1 → E-cores:  45.1%  [█████████░░░░░░░░░░░]
+  placement_score:  39.2%  ±8.7
+
+Cenário: relaxed  (n=200 runs)
+----------------------------------------
+  cls2 → P-cores:  25.7%  [█████░░░░░░░░░░░░░░░]
+  cls1 → E-cores:  25.8%  [█████░░░░░░░░░░░░░░░]
+  placement_score:  25.8%  ±10.9
+
+============================================================
+SUMÁRIO
+  Cenário                 cls2→P%    cls1→E%   score   ±std    n
+  ----------------------------------------------------------
+  contention                33.2%      45.1%   39.2%    8.7  200
+  relaxed                   25.7%      25.8%   25.8%   10.9  200
