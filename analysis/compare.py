@@ -508,7 +508,7 @@ def main():
 
     kernels = []
     for name in kernel_names:
-        d = base / name
+        d = base /name
         if not d.exists():
             print(f"[ERRO] diretório não encontrado: {d}", file=sys.stderr)
             sys.exit(1)

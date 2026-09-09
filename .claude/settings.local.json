@@ -5,7 +5,22 @@
       "Bash(sudo dmesg)",
       "Bash(sudo journalctl -k --no-pager)",
       "Read(//sys/devices/system/cpu/cpu0/thermal_throttle/**)",
-      "WebFetch(domain:lkml.org)"
+      "WebFetch(domain:lkml.org)",
+      "Bash(lscpu -e)",
+      "Read(//sys/kernel/debug/**)",
+      "Bash(mount)",
+      "Bash(ls /sys/kernel/debug/ | grep -i ipcc)",
+      "Bash(sudo ls /sys/kernel/debug/)",
+      "Bash(find /home/lucas/Codes/sched_original_ipcc -name \"*.c\" | xargs grep -l \"ipcc_classify\\\\|debugfs.*ipcc\" 2>/dev/null)",
+      "Read(//home/lucas/Codes/sched_original_ipcc/**)",
+      "Bash(grep -n \"ipcc_classify\\\\|debugfs_create\\\\|register_debug\\\\|sched_debug\" /home/lucas/Codes/sched_original_ipcc/arch/x86/kernel/sched_ipcc_classifier.c | head -30)",
+      "Read(//home/lucas/Codes/sched_original_ipcc/arch/x86/kernel/**)",
+      "Bash(grep -n \"debugfs\\\\|/sys/kernel/debug\\\\|write.*classify\\\\|classify.*write\\\\|ipcc_classify_write\\\\|fops\\\\|file_operations\" /home/lucas/Codes/sched_original_ipcc/arch/x86/kernel/sched_ipcc_classifier.c | head -30)",
+      "Bash(ps -p 7937 -p 7940 -o pid,psr,comm)",
+      "Bash(grep -n \"IPCC_SHADOW_FORK_TIMEOUT_MS\\\\|IPCC_SWEEP_IDLE_MS\\\\|IPCC_DWELL\\\\|IPCC_SHADOW\" /home/lucas/Codes/sched_original_ipcc/arch/x86/kernel/sched_ipcc_classifier.c | head -20)",
+      "Bash(find /home/lucas/Codes/sched_original_ipcc -name \"*.c\" | xargs grep -l \"intel_hfi_read_classid\" 2>/dev/null)",
+      "Bash(grep -n \"intel_hfi_read_classid\\\\|hfi_instance\\\\|hfi_table\\\\|class\" /home/lucas/Codes/sched_original_ipcc/drivers/thermal/intel/intel_hfi.c | head -30)",
+      "Read(//home/lucas/Codes/sched_original_ipcc/drivers/thermal/intel/**)"
     ]
   }
 }

@@ -17,6 +17,7 @@ generate_report() {
         echo "P-cores:  ${PCORES}  (${N_PHYSICAL_PCORES} físicos)"
         echo "E-cores:  ${ECORES}"
         echo "Total CPUs: ${TOTAL_CPUS}"
+        echo "Classificador: ${CLASSIFIER_CPU:-nenhum}${CLASSIFIER_CPU:+ (excluída)}"
         echo ""
 
         echo "--- PLACEMENT ---"
@@ -28,29 +29,6 @@ generate_report() {
             cp=$(_mean_std "${dir}/cls2_p_residency.txt")
             ce=$(_mean_std "${dir}/cls1_e_residency.txt")
             echo "  ${tag}: cls2→P=${cp}%  cls1→E=${ce}%"
-        done
-
-        echo ""
-        echo "--- LATÊNCIA (schbench, μs) ---"
-        for f in "${OUTDIR}"/latency/schbench_*/percentiles.csv; do
-            [[ -f "$f" ]] || continue
-            local tag
-            tag=$(basename "$(dirname "$f")" | sed 's/schbench_//')
-            local p50 p90 p99
-            p50=$(tail -n +2 "$f" | awk -F, '{sum+=$2; n++} END{if(n>0) printf "%.0f", sum/n}')
-            p90=$(tail -n +2 "$f" | awk -F, '{sum+=$4; n++} END{if(n>0) printf "%.0f", sum/n}')
-            p99=$(tail -n +2 "$f" | awk -F, '{sum+=$6; n++} END{if(n>0) printf "%.0f", sum/n}')
-            echo "  ${tag}: p50=${p50}  p90=${p90}  p99=${p99}"
-        done
-
-        echo ""
-        echo "--- THROUGHPUT ---"
-        for dir in "${OUTDIR}"/throughput/*/; do
-            [[ -d "$dir" ]] || continue
-            local tag
-            tag=$(basename "$dir")
-            echo "  ${tag}:"
-            echo "    ops/s:   $(_mean_std "${dir}/compute_ops.txt")"
         done
 
         echo ""

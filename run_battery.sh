@@ -58,9 +58,53 @@ _count_physical_pcores() {
     echo "$count"
 }
 
+# P-core reservado ao classificador shadow: isolado e preso na freq mínima,
+# nada do workload roda nele. Vazio em kernels sem o mecanismo.
+#
+# O reaper em si não é pinado nesse cpu (só gerencia a fila, roda em
+# qualquer housekeeping cpu) — quem fica preso lá é o shadow, sob demanda.
+# O sinal estável é ipcc_pin_min_freq(): scaling_max_freq é forçado ao
+# scaling_min_freq só nesse cpu, entre os P-cores já detectados.
+_detect_classifier_cpu() {
+    local cpu min max
+    pgrep -x ipcc-reaper &>/dev/null || return 0
+
+    local -a arr
+    IFS=',' read -ra arr <<< "$PCORES"
+    for cpu in "${arr[@]}"; do
+        min=$(cat "/sys/devices/system/cpu/cpu${cpu}/cpufreq/scaling_min_freq" 2>/dev/null) || continue
+        max=$(cat "/sys/devices/system/cpu/cpu${cpu}/cpufreq/scaling_max_freq" 2>/dev/null) || continue
+        if [[ -n "$min" && "$min" == "$max" ]]; then
+            CLASSIFIER_CPU="$cpu"
+            return 0
+        fi
+    done
+    return 0
+}
+
+_drop_cpu_from_list() {
+    local list="$1" drop="$2" out="" c
+    local -a arr
+    IFS=',' read -ra arr <<< "$list"
+    for c in "${arr[@]}"; do
+        [[ "$c" == "$drop" ]] && continue
+        out="${out:+$out,}$c"
+    done
+    echo "$out"
+}
+
 _detect_hybrid_topology
 
-TOTAL_CPUS=$(nproc --all)
+CLASSIFIER_CPU=""
+_detect_classifier_cpu
+
+TOTAL_CPUS=$(nproc)
+if [[ -n "$CLASSIFIER_CPU" ]]; then
+    PCORES=$(_drop_cpu_from_list "$PCORES" "$CLASSIFIER_CPU")
+    ECORES=$(_drop_cpu_from_list "$ECORES" "$CLASSIFIER_CPU")
+    TOTAL_CPUS=$(( TOTAL_CPUS - 1 ))
+fi
+
 N_PHYSICAL_PCORES=$(_count_physical_pcores)
 ALLCORES="${PCORES}${ECORES:+,${ECORES}}"
 
@@ -85,9 +129,9 @@ while [[ $# -gt 0 ]]; do
         --phases)   ONLY_PHASES="$2"; shift 2 ;;
         --help)
             echo "Uso: sudo ./run_battery.sh [--kernel <tag>] [--runs <N>] [--outdir <dir>]"
-            echo "Fases: placement, latency, throughput, report"
-            echo "  --phases: lista separada por vírgula (ex: --phases latency,throughput)"
-            echo "  --skip-to: pula fases anteriores (ex: --skip-to throughput)"
+            echo "Fases: placement, report"
+            echo "  --phases: lista separada por vírgula (ex: --phases placement)"
+            echo "  --skip-to: pula fases anteriores (ex: --skip-to report)"
             exit 0 ;;
         *) die "Argumento desconhecido: $1" ;;
     esac
@@ -96,7 +140,7 @@ done
 OUTDIR="${OUTDIR:-./results/${KERNEL_TAG}}"
 LOG="${OUTDIR}/run.log"
 
-mkdir -p "$OUTDIR"/{placement,latency,throughput,raw}
+mkdir -p "$OUTDIR"/{placement,raw}
 
 log()  { echo -e "${GREEN}[$(date +%H:%M:%S)]${NC} $*" | tee -a "$LOG"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*" | tee -a "$LOG"; }
@@ -111,12 +155,15 @@ log " Output: ${OUTDIR}"
 log " P-cores lógicos: [${PCORES}]  (${N_PHYSICAL_PCORES} físicos)"
 log " E-cores: [${ECORES}]"
 log " Total CPUs: ${TOTAL_CPUS}"
+if [[ -n "$CLASSIFIER_CPU" ]]; then
+    log " CPU ${CLASSIFIER_CPU} reservada ao classificador shadow — excluída"
+else
+    log " Sem classificador shadow ativo — nenhuma CPU excluída"
+fi
 log "========================================================="
 
 source "$(dirname "$0")/benchmarks/battery/preflight.sh"
 source "$(dirname "$0")/benchmarks/battery/placement.sh"
-source "$(dirname "$0")/benchmarks/battery/latency.sh"
-source "$(dirname "$0")/benchmarks/battery/throughput.sh"
 source "$(dirname "$0")/benchmarks/battery/report.sh"
 
 _phase_reached=""
@@ -136,8 +183,6 @@ _should_run() {
 run_preflight
 
 _should_run placement  && run_placement_tests
-_should_run latency    && run_latency_tests
-_should_run throughput && run_throughput_tests
 _should_run report     && generate_report
 
 log "========================================================="
