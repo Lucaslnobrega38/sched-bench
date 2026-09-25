@@ -55,7 +55,6 @@ run_throughput_tests() {
     local n_bg=$(( TOTAL_CPUS - N_PHYSICAL_PCORES ))
 
     _bench_throughput "c2_alone"       "${N_PHYSICAL_PCORES}" 0
-    _bench_throughput "c2_relaxed"     "${N_PHYSICAL_PCORES}" "${N_PHYSICAL_PCORES}"
     _bench_throughput "c2_contention"  "${N_PHYSICAL_PCORES}" "${n_bg}"
 
     log "Fase 3 concluída → ${THROUGHPUT_DIR}/"

@@ -7,7 +7,7 @@
 # Fases:
 #   1. Placement  — cls2→P-core, cls1→E-core (relaxed + contention)
 #   2. Latência   — schbench baseline
-#   3. Throughput — N cls2 alone / relaxed (N cls1) / contention (M cls1)
+#   3. Throughput — N cls2 alone + N cls2 + M cls1 contention
 # =============================================================================
 
 set -euo pipefail
