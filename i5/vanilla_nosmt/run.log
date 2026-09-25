@@ -1,0 +1,45 @@
+[0;32m[17:23:29][0m =========================================================
+[0;32m[17:23:29][0m  BATERIA SCHEDULER — kernel: 7.0.0-rc1-g07f67f9b1924
+[0;32m[17:23:29][0m  Runs por teste: 100
+[0;32m[17:23:29][0m  Output: ./results/vanilla_nosmt
+[0;32m[17:23:29][0m  P-cores lógicos: [0,2]  (2 físicos)
+[0;32m[17:23:29][0m  E-cores: [4,5,6,7,8,9,10,11]
+[0;32m[17:23:29][0m  Total CPUs: 12
+[0;32m[17:23:29][0m =========================================================
+[0;32m[17:23:29][0m === FASE 0: PREFLIGHT ===
+[0;32m[17:23:29][0m Topologia detectada: P-cores=[0,2] E-cores=[4,5,6,7,8,9,10,11]
+[0;32m[17:23:29][0m CPU: 13th Gen Intel(R) Core(TM) i5-1334U
+[0;32m[17:23:29][0m Prioridades ITMT:
+[0;32m[17:23:29][0m Fixando CPU governor em 'performance'...
+[0;32m[17:23:29][0m Governor: powersave → performance
+[0;32m[17:23:29][0m Intel turbo: desativado
+[0;32m[17:23:29][0m Aquecimento (5s)...
+[0;32m[17:23:34][0m Preflight concluído.
+[0;32m[17:23:34][0m === FASE 1: PLACEMENT ===
+[0;32m[17:23:34][0m   cls2: rand48  |  cls1: div16
+[0;32m[17:23:34][0m   P-cores físicos: 2  |  Total CPUs: 12
+[0;32m[17:23:34][0m   placement runs = 200 (2× --runs)
+[0;32m[17:23:34][0m   [placement] relaxed: 2 cls2(rand48) + 2 cls1(div16) × 200 runs
+[0;32m[19:03:46][0m   [placement] relaxed: 200 runs → ./results/vanilla_nosmt/placement/relaxed/
+[0;32m[19:03:46][0m   [placement] contention: 2 cls2(rand48) + 10 cls1(div16) × 200 runs
+[0;32m[20:44:06][0m   [placement] contention: 200 runs → ./results/vanilla_nosmt/placement/contention/
+[0;32m[20:44:06][0m Fase 1 concluída → ./results/vanilla_nosmt/placement/
+[0;32m[20:44:06][0m === FASE 2: LATÊNCIA ===
+[0;32m[20:44:06][0m   [schbench] baseline — 4 workers, sem contention (run 1)
+[0;32m[21:34:07][0m   [schbench] baseline: ./results/vanilla_nosmt/latency/schbench_baseline/percentiles.csv
+[0;32m[21:34:07][0m Fase 2 concluída → ./results/vanilla_nosmt/latency/
+[0;32m[21:34:07][0m === FASE 3: THROUGHPUT ===
+[0;32m[21:34:07][0m   cls2: rand48  |  cls1: div16
+[0;32m[21:34:07][0m   P-cores físicos: 2  |  Total CPUs: 12
+[0;32m[21:34:07][0m   [throughput] c2_alone: 2 cls2 + 0 cls1, 12s
+[0;32m[21:54:10][0m   [throughput] c2_alone → ./results/vanilla_nosmt/throughput/c2_alone/
+[0;32m[21:54:10][0m   [throughput] c2_contention: 2 cls2 + 10 cls1, 12s
+[0;32m[22:19:12][0m   [throughput] c2_contention → ./results/vanilla_nosmt/throughput/c2_contention/
+[0;32m[22:19:12][0m Fase 3 concluída → ./results/vanilla_nosmt/throughput/
+[0;32m[22:19:12][0m === RELATÓRIO ===
+[0;32m[22:19:12][0m Relatório: ./results/vanilla_nosmt/report.txt
+[0;32m[22:19:12][0m =========================================================
+[0;32m[22:19:12][0m  BATERIA CONCLUÍDA — resultados em: ./results/vanilla_nosmt
+[0;32m[22:19:12][0m =========================================================
+[0;32m[22:19:12][0m Restaurando governor → powersave
+[0;32m[22:19:12][0m Intel turbo restaurado.
