@@ -7,7 +7,7 @@
 # Fases:
 #   1. Placement  — cls2→P-core, cls1→E-core (relaxed + contention)
 #   2. Latência   — schbench baseline
-#   3. Throughput — N cls2 alone + N cls2 + M cls1 contention
+#   3. Throughput — N cls2 alone / relaxed (N cls1) / contention (M cls1)
 # =============================================================================
 
 set -euo pipefail
@@ -129,7 +129,7 @@ while [[ $# -gt 0 ]]; do
         --phases)   ONLY_PHASES="$2"; shift 2 ;;
         --help)
             echo "Uso: sudo ./run_battery.sh [--kernel <tag>] [--runs <N>] [--outdir <dir>]"
-            echo "Fases: placement, report"
+            echo "Fases: placement, throughput, report"
             echo "  --phases: lista separada por vírgula (ex: --phases placement)"
             echo "  --skip-to: pula fases anteriores (ex: --skip-to report)"
             exit 0 ;;
@@ -140,7 +140,7 @@ done
 OUTDIR="${OUTDIR:-./results/${KERNEL_TAG}}"
 LOG="${OUTDIR}/run.log"
 
-mkdir -p "$OUTDIR"/{placement,raw}
+mkdir -p "$OUTDIR"/{placement,raw,throughput}
 
 log()  { echo -e "${GREEN}[$(date +%H:%M:%S)]${NC} $*" | tee -a "$LOG"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*" | tee -a "$LOG"; }
@@ -164,6 +164,7 @@ log "========================================================="
 
 source "$(dirname "$0")/benchmarks/battery/preflight.sh"
 source "$(dirname "$0")/benchmarks/battery/placement.sh"
+source "$(dirname "$0")/benchmarks/battery/throughput.sh"
 source "$(dirname "$0")/benchmarks/battery/report.sh"
 
 _phase_reached=""
@@ -183,6 +184,7 @@ _should_run() {
 run_preflight
 
 _should_run placement  && run_placement_tests
+_should_run throughput && run_throughput_tests
 _should_run report     && generate_report
 
 log "========================================================="
