@@ -87,7 +87,6 @@ else
     apt-get install -y \
         linux-tools-common \
         linux-tools-generic \
-        linux-tools-"$(uname -r)" \
         util-linux \
         cpufrequtils \
         msr-tools \
@@ -95,7 +94,6 @@ else
         sysbench \
         numactl \
         hwloc \
-        hwloc-nox \
         lmbench \
         rt-tests \
         fio \
@@ -112,6 +110,11 @@ else
         libtool \
         git \
         wget
+
+    # linux-tools do kernel exato pode não existir para kernels customizados
+    # (ex: builds com patches locais). perf já vem via linux-tools-generic.
+    apt-get install -y "linux-tools-$(uname -r)" 2>/dev/null \
+        || warn "linux-tools-$(uname -r) indisponível (kernel customizado) — perf já deve estar coberto por linux-tools-generic"
 fi
 
 # ---------------------------------------------------------------------------
