@@ -1,223 +1,197 @@
 ================================================================================
   METODOLOGIA DE BENCHMARKING — sched-bench
-  Avaliação do Intel Thread Director (ITD) com patches IPCC de Ricardo Neri
+  Avaliação do Intel Thread Director (ITD) com o mecanismo ICAS (patches IPCC
+  de Ricardo Neri, portados para Linux 7.0.0-rc1)
 ================================================================================
+
+Este documento descreve o que run_battery.sh e os scripts em benchmarks/battery/
+realmente fazem hoje. Não descreve fases descontinuadas (latência com schbench/
+cyclictest/hackbench/perf-bench-pipe, energia via RAPL, overhead de scheduler):
+elas existiram em versões anteriores do script e foram removidas do código.
+
 
 1. OBJETIVO
 -----------
-Medir o impacto das classes IPCC (Intel Performance and Capability Classification)
-propostas por Ricardo Neri para o scheduler Linux em CPUs Intel híbridas. O artigo
-investiga se as classes ITD são úteis para o scheduler e aponta imprecisões e
-limitações do mecanismo.
+Medir se o ICAS (classes IPCC do Intel Thread Director usadas como tiebreaker
+no balanceador de carga do CFS) muda o placement e o throughput de tarefas
+híbridas, comparado a um kernel que só conhece prioridade de core (ITMT/
+asym_packing).
 
 Questões centrais:
-  - O scheduler coloca tarefas cls2 (vector/SIMD) nos P-cores preferencialmente?
-  - As classes ITD reduzem latência de wakeup?
-  - Há ganho de throughput ou eficiência energética para workloads cls2?
-  - Qual o overhead introduzido no caminho quente do scheduler?
+  - O scheduler coloca tarefas cls2 (vetorizadas) nos P-cores preferencialmente?
+  - Há ganho de throughput para workloads cls2 sob contenção?
+  - Um oráculo com tarefas presas por taskset (sem depender do scheduler)
+    estabelece que teto de placement/throughput é alcançável?
 
 
-2. PLATAFORMA
--------------
-  CPU    : Intel Core i5-1334P (Raptor Lake-P)
-  P-cores: 4 (CPU 0–3, Hyper-Threading, ITD ativo)
-  E-cores: 8 (CPU 4–11, sem HT, sem ITD)
-  Kernel : Linux 7.0.0-rc1 com patches IPCC portados de Ricardo Neri
+2. PLATAFORMAS
+---------------
+  i5-1334U (Raptor Lake-U): 2 P-cores físicos (4 threads com Hyper-Threading,
+    CPU 0-3) + 8 E-cores (CPU 4-11) = 12 CPUs lógicas.
+  i9-14900HX (Raptor Lake-HX): 8 P-cores físicos (16 threads com HT,
+    CPU 0-15) + 16 E-cores (CPU 16-31) = 32 CPUs lógicas.
 
-  Configurações de kernel testadas:
-    vanilla       — sem asym_packing, sem IPCC (CFS puro)
-    asym_packing  — asym_packing ativo, sem IPCC
-    ipcc          — asym_packing + classes IPCC ativas
+  A topologia é detectada em tempo de execução via
+  /sys/devices/system/cpu/cpuN/acpi_cppc/highest_perf (>50 = P-core) e
+  /sys/devices/system/cpu/cpuN/topology/core_id (para agrupar threads de um
+  mesmo P-core físico). Não há valor fixo de topologia no código.
 
-  O vanilla é o baseline. Todas as comparações usam Δ% = (X − baseline) / baseline.
+  Kernels comparados (todos Linux 7.0.0-rc1, branches diferentes):
+    vanilla_smt / vanilla_nosmt — ITMT/asym_packing ativo, sem IPCC (baseline)
+    orig_smt    / orig_nosmt    — baseline + ICAS (patches de Neri, sem
+                                   modificação)
+    oracle_smt                  — kernel vanilla, tarefas presas por taskset
+                                   (--oracle-pin); mede o teto de placement/
+                                   throughput independente do scheduler
+    custom_smt                  — variante com heurística própria (EWMA de
+                                   classe por tarefa); fora do escopo do artigo
+                                   atual, mantida para trabalho futuro
+
+  "_smt"/"_nosmt" é só o rótulo do diretório de saída (--outdir); o script não
+  liga/desliga SMT sozinho — isso é feito manualmente antes de cada rodada:
+    echo off | sudo tee /sys/devices/system/cpu/smt/control   # desligar
+    echo on  | sudo tee /sys/devices/system/cpu/smt/control   # religar
+  Sempre conferir no run.log resultante (P-cores lógicos, Total CPUs) que a
+  topologia bate com o rótulo escolhido — já aconteceu de duas rodadas saírem
+  trocadas por SMT não ter sido alternado no momento certo.
 
 
 3. CLASSES IPCC (ITD)
----------------------
-O hardware ITD reporta uma classe por thread a cada intervalo de amostragem.
-O scheduler adiciona +1 ao valor do hardware, reservando 0 para "não classificado":
+----------------------
+Ver docs/ipcc_classes_behavior.txt para a caracterização empírica completa
+(estabilidade, mapeamento de 82 métodos do stress-ng, efeito do sibling HT,
+deltas de throughput P-core vs E-core). Resumo:
 
-  Scheduler  Hardware  Significado
-  ---------  --------  --------------------------------------------------
-  0          —         Unclassified (tarefa nunca avaliada ou em E-core)
-  1          0         Integer/Scalar (aritmética escalar, FP x87/SSE)
-  2          1         Vector/SIMD (loops tight, auto-vetorização implícita)
-  3          2         Não documentada (observada em workloads popcount/PDEP)
+  Scheduler (ipcc)  Hardware  Significado
+  ----------------  --------  --------------------------------------------
+  0                 —         Unclassified (nunca avaliada, ou em E-core)
+  1                 0         Non-vectorized integer/FP (ultra-estável)
+  2                 1         Vectorized, exceto DL Boost (instável, ~95%
+                               do tempo na classe dominante)
+  3                 2         DL Boost (não observada nos testes deste doc)
+  4                 3         pause / spin-wait
 
-Mapeamento de workloads de benchmark para classes ITD (medido empiricamente
-com /proc/PID/sched, campo ipcc, taskset no P-core 0, sibling HT ocioso):
-
-  stress-ng --cpu-method rand48  → classe 2 (vector) — count oscila 1–1000/s
-  stress-ng --cpu-method div16   → classe 1 (integer) — count acumula ~2000/s
-  schbench (workers + messenger) → classe 0 (unclassified, curtos períodos)
-
-Nota: a estabilidade da classificação difere significativamente entre classes.
-Classe 1 é altamente estável (count cresce monotonicamente). Classe 2 é instável
-(count reseta periodicamente). Isso tem impacto direto na eficácia do scheduler.
-
-Efeito do sibling HT (testado em laboratório):
-  Com ambos os threads lógicos de um P-core ocupados simultaneamente,
-  toda classificação cls2 regride para cls1. O ITD mantém contadores por
-  core físico, não por thread lógico. Em workloads com HT ativo, a classe 2
-  é essencialmente inalcançável.
+Workloads usados na bateria:
+  stress-ng --cpu-method rand48  → classe 2, maior afinidade a P-core medida
+                                    (P/E = 3.03x, ver docs/ipcc_classes_behavior.txt)
+  stress-ng --cpu-method div16   → classe 1, ultra-estável, afinidade a
+                                    P-core mais modesta (P/E = 1.35x)
 
 
-4. WORKLOADS DE BENCHMARK
---------------------------
-Compute (cls2): stress-ng --cpu-method rand48
-  Workload PRNG em loop tight, auto-vetorizado pelo compilador.
-  Classificado como cls2 de forma consistente quando rodando em P-core isolado.
-  Métrica: bogo-ops/s reportado pelo stress-ng (--metrics-brief).
+4. FASES DO run_battery.sh
+----------------------------
 
-Background (cls1): stress-ng --cpu-method div16
-  Divisão inteira de 16 bits em loop. Classificado como cls1 de forma
-  ultra-estável (nunca reclassifica).
+4.1 PLACEMENT (fase "placement")
+  Mede onde o scheduler coloca cada classe. Polling de /proc/PID/stat
+  (campo 39, CPU atual) a cada 100ms, por 30s, sobre os PIDs dos workers.
+  Métricas: cls2_p_residency (% do tempo que tarefas cls2 passam em P-core)
+  e cls1_e_residency (% do tempo que tarefas cls1 passam em E-core).
 
-Latência (cls0): schbench -t 4 -m 2 --runtime 15
-  Benchmark de wakeup latency. Cria messenger threads e worker threads que
-  dormem e acordam em ciclo. Não recebe classificação IPCC estável.
-  Métrica: percentis p50, p90, p99.9 de latência de wakeup (μs).
+  Cenários (script: benchmarks/battery/placement.sh):
+    relaxed    : N cls2 (rand48) + N cls1 (div16), N = P-cores físicos
+                 (2 no i5, 8 no i9)
+    contention : N cls2 + M cls1, M = CPUs lógicas totais − N (i5: 12
+                 tarefas; i9: 32) — mesmo N/M com ou sem SMT, então nosmt
+                 fica sobre-inscrito (menos CPUs online, mesma carga)
 
+  Runs efetivos = 2 × --runs (o script dobra internamente: --runs 50 dá
+  100 corridas de placement no i5, --runs 100 dá 200 no i9).
 
-5. FASES DE BENCHMARK E CENÁRIOS
-----------------------------------
+4.2 THROUGHPUT (fase "throughput")
+  Mede a vazão média por worker cls2 (bogo-ops/s, tempo real) sob contenção.
+  Cenário único, "c2_contention" (script: benchmarks/battery/throughput.sh):
+  nproc --all / 2 tarefas cls2 + nproc --all / 2 tarefas cls1 (i5: 6+6, i9:
+  16+16), cada uma um processo stress-ng --cpu 1 próprio, por
+  THROUGHPUT_DURATION segundos (padrão 10s, curto o bastante para estabilizar
+  sem gastar tempo demais). A métrica é a média das linhas "bogo ops/s (real
+  time)" só dos workers cls2 — não a soma de um único stress-ng --cpu N como
+  em versões anteriores.
 
-5.1 PLACEMENT CORRECTNESS (Fase 1)
-  Mede onde o scheduler coloca cada classe de tarefa.
-  Método: polling de /proc/PID/stat a cada 100ms durante execução dos workers.
-  Métricas:
-    cls2_p_residency : % do tempo que workers cls2 passam nos P-cores (CPU 0–3)
-    cls1_e_residency : % do tempo que workers cls1 passam nos E-cores (CPU 4–11)
+  THROUGHPUT_LAUNCH controla a ordem de lançamento:
+    together (padrão) — todas as tarefas juntas, intercaladas cls2/cls1
+    bg_first           — cls1 entra 0.3s antes dos cls2 (comportamento antigo;
+                          deixa os cls2 herdarem as CPUs que sobrarem)
 
-  Cenários:
-    only_cls2 : 12 workers rand48  (sem cls1)       — 1 run × 30s
-    only_cls1 : 12 workers div16   (sem cls2)        — 1 run × 30s
-    mixed     : 4 workers rand48 + 8 workers div16   — 50 runs × 30s
-      (match topologia: 4 P-cores + 8 E-cores)
+  Runs efetivos = 2 × --runs, como o placement.
 
-  O cenário mixed tem alta variância e usa 50 runs para análise estatística.
-  Os cenários only_* têm baixa variância e são executados uma única vez.
+4.3 --oracle-pin (ambas as fases)
+  Em vez de deixar o scheduler decidir, cada tarefa é presa a uma CPU
+  própria via taskset. cls2 recebe prioridade de preenchimento sobre as
+  CPUs de P-core (em ordem crua, sem deduplicar por core físico) e depois
+  as E-cores; cls1 recebe o que sobra. Não há como usar --oracle-pin com
+  nosmt hoje: a lista de CPUs consideradas só inclui as online, mas o
+  número de tarefas continua fixo em nproc --all/2 — a diferença estoura o
+  índice e duas tarefas acabam presas ao mesmo CPU (double-booking). Por
+  isso --oracle-pin só é suportado com SMT ligado.
 
-5.2 LATÊNCIA DE WAKEUP — schbench (Fase 2)
-  Mede latência de wakeup de tarefas latency-sensitive sob contention.
-  50 runs × 15s por cenário.
-
-  Cenários:
-    baseline    : schbench sozinho (sem contention)
-    vs_bg4      : schbench + 4 workers cls1 (div16)
-    vs_bg8      : schbench + 8 workers cls1 (div16)
-    vs_c4bg4    : schbench + 4 workers cls2 (rand48) + 4 workers cls1
-    vs_c4bg8    : schbench + 4 workers cls2 (rand48) + 8 workers cls1
-
-  Métricas reportadas: p50, p90, p99.9 (μs).
-
-5.3 LATÊNCIA PERIÓDICA — cyclictest (Fase 2)
-  Mede latência de wakeup periódico de threads RT (SCHED_FIFO, prioridade 80)
-  afixadas nos P-cores. Indicador de overhead no path de wakeup.
-  50 runs × 10s por cenário.
-
-  Cenários:
-    pcores_idle : sem carga de fundo
-    pcores_load : 4 workers cls2 + 8 workers cls1 rodando em paralelo
-
-  Parâmetros: --interval=200μs --distance=0 --affinity=0-3 --priority=80.
-
-5.4 LATÊNCIA IPC — hackbench (Fase 2)
-  Mede latência de troca de mensagens entre grupos de tarefas via pipe/socket.
-  Proxy de overhead no caminho de wakeup para pares comunicantes.
-  50 runs por cenário.
-
-  Cenários:
-    alone : 10 grupos, sem contention
-    bg8   : 10 grupos + 8 workers cls1 rodando em paralelo
-
-5.5 LATÊNCIA DE CONTEXT SWITCH — perf bench pipe (Fase 2)
-  Mede μs/op de 100.000 operações ping-pong entre dois processos via pipe.
-  Indicador direto do overhead do scheduler no caminho quente.
-  50 runs. LC_ALL=C para consistência de locale.
-
-5.6 THROUGHPUT — bogo-ops/s (Fase 3)
-  Mede throughput do workload cls2 (rand48) sob contention de cls1 (div16).
-  50 runs × 10s por cenário.
-
-  Cenários:
-    c4_alone : 4 workers rand48, sem background
-    c4_bg4   : 4 workers rand48 + 4 workers div16
-    c4_bg8   : 4 workers rand48 + 8 workers div16 (sistema saturado: 12/12 CPUs)
-
-  Background sobe antes do compute e roda por mais tempo para cobrir a janela.
-
-5.7 EFICIÊNCIA ENERGÉTICA — ops/Joule (Fase 4)
-  Mede ops/s e energia do pacote (RAPL) simultaneamente.
-  Métrica: compute_ops / pkg_joules (bogo-ops por Joule consumido).
-  RAPL via /sys/class/powercap/intel-rapl:0/energy_uj (requer sudo).
-  50 runs × 12s por cenário.
-
-  Cenários (espelham throughput para correlação):
-    baseline_c4 : 4 workers rand48 sozinhos
-    c4_bg4      : 4 workers rand48 + 4 workers div16
-    c4_bg8      : 4 workers rand48 + 8 workers div16
-
-5.8 OVERHEAD DO SCHEDULER (Fase 5)
-  Mede overhead direto das modificações no scheduler.
-
-  context switches : perf stat -e context-switches -a, 10s × 50 runs
-                     Workload: stress-ng --cpu $(nproc) --cpu-method rand48
-  cpu migrations   : perf stat -e cpu-migrations -a, 10s × 50 runs
-                     Workload: stress-ng --cpu $(nproc) --cpu-method rand48
-  pipe latency     : perf bench sched pipe -l 100000, 50 runs (via seção 4)
+4.4 heatmap (opt-in, --phases heatmap)
+  Uma corrida longa (HEATMAP_DURATION, padrão 200s) amostrando a CPU de
+  cada tarefa no tempo, para desenhar um heatmap placement×tempo
+  (analysis/heatmap.py). Não faz parte da bateria padrão nem do artigo
+  atual — a figura usada no artigo é analysis/fig_results.py (um ponto por
+  corrida, média e Δ%), que não precisa dessa coleta.
 
 
-6. ANÁLISE ESTATÍSTICA
------------------------
-  Todas as comparações usam vanilla como baseline.
-  Δ% = (valor_kernel − valor_vanilla) / valor_vanilla × 100
+5. ANÁLISE
+-----------
+Scripts em analysis/ (fora do venv do repo — precisam de numpy/matplotlib/
+scipy instalados à parte, ou de um venv próprio):
+  compare.py            — Welch t-test entre kernels, tabela + gráficos
+  stats_report.py        — relatório estatístico por diretório de resultado
+  placement_accuracy.py  — resumo de acurácia de placement por cenário
+  fig_results.py         — figura usada no artigo: um ponto por corrida,
+                            barra de média, Δ% de icas sobre asym_packing
+                            (aceita um 3º diretório opcional = oráculo)
 
-  Significância estatística:
-    Teste t de Welch (duas amostras, variâncias desiguais)
-    *** p < 0.001   ** p < 0.01   * p < 0.05   ns = não significativo
-
-  Para placement (mixed, 50 runs): t-test aplicado separadamente para
-  cls2_p_residency e cls1_e_residency, relatando ΔP% e ΔE% com significância.
-
-  Tamanho de amostra: 50 runs por cenário. Justificativa: para os efeitos
-  observados (Cohen's d > 0.5 nas métricas principais), 50 amostras fornecem
-  potência estatística > 80% com α = 0.05.
+  Δ% = (valor_kernel − valor_baseline) / valor_baseline × 100, baseline é
+  sempre o kernel vanilla/asym_packing correspondente.
 
 
-7. REPRODUTIBILIDADE
----------------------
-  Scripts: https://github.com/[repo]/sched-bench
-  Dependências: schbench, cyclictest, stress-ng, perf, Python 3 (scipy, numpy,
-                matplotlib, pandas)
+6. REPRODUTIBILIDADE
+----------------------
   Setup: ./setup_deps.sh  (detecta Arch Linux ou Debian/Ubuntu)
-  Execução: sudo ./run_battery.sh --kernel <tag> --runs 50
-  Análise: python3 analysis/compare.py --kernels vanilla,asym_packing,ipcc
+  Execução (dentro de sched-bench/):
+    sudo ./run_battery.sh --kernel <tag> --outdir i5/<tag> --runs 50 \
+        --phases placement,throughput
+    sudo ./run_battery.sh --oracle-pin --kernel oracle_smt \
+        --outdir i5/oracle_pin --runs 50 --phases placement,throughput
 
-  Cada fase tem skip logic: se os arquivos de resultado já existem com RUNS
-  amostras, o benchmark é pulado. Execuções interrompidas podem ser retomadas.
+  Cada fase tem skip logic: se o arquivo de resultado já tem --runs (ou
+  2×--runs, para placement/throughput) amostras, a fase é pulada; execuções
+  interrompidas retomam do ponto onde pararam.
 
-  LC_ALL=C é forçado antes de todos os comandos perf para garantir consistência
-  do separador decimal independente do locale do sistema.
+  O preflight fixa o governor de CPU em "performance" e desliga o turbo
+  (Intel: intel_pstate/no_turbo=1) durante toda a bateria, restaurando ao
+  final. Ele NÃO fixa platform_profile, EPP (energy_performance_preference)
+  nem os limites RAPL — isso pode introduzir variação entre sessões se a
+  máquina estiver em perfis de energia diferentes (ex.: bateria vs. AC).
 
 
-8. LIMITAÇÕES CONHECIDAS
+7. LIMITAÇÕES CONHECIDAS
 --------------------------
-  - Hyper-Threading ativo durante todos os testes. Com HT ativo, cls2 regride
-    para cls1 sempre que o sibling está ocupado (verificado empiricamente).
-    Isso limita a observabilidade do efeito IPCC em condições realistas.
+  - Com Hyper-Threading ligado, o registro de hardware (MSR) reporta classe 1
+    para as duas threads quando ambas estão ocupadas — o hardware não separa
+    por thread lógica, só por core físico. Isso NÃO significa que a classe
+    gravada fica errada: o filtro de acurácia e o debounce do ICAS impedem
+    que essa leitura colapsada seja gravada quando o irmão está ocupado. O
+    efeito real é disponibilidade reduzida do sinal sob SMT, não corrupção.
 
-  - O workload rand48 (cls2) tem count instável (oscila entre 1 e ~1000 a cada
-    segundo), enquanto div16 (cls1) tem count monotonicamente crescente. A
-    instabilidade de cls2 pode impedir o scheduler de agir com confiança.
+  - rand48 (cls2) tem classificação instável mesmo isolado (~250 transições
+    em 5s), enquanto div16 (cls1) é praticamente monotônico. Ver
+    docs/ipcc_classes_behavior.txt para a tabela completa de estabilidade
+    por método.
 
-  - schbench opera em classe 0 (unclassified). Testes de latência medem o
-    comportamento do scheduler para tarefas sem classe ITD definida.
+  - nosmt sobre-inscreve deliberadamente: o número de tarefas usa
+    nproc --all (fixo, não muda quando threads SMT ficam offline), então
+    nosmt roda a mesma carga em menos CPUs reais.
 
-  - RAPL mede energia do pacote inteiro (P-cores + E-cores + uncore). Não é
-    possível isolar energia apenas dos P-cores ou E-cores individualmente.
+  - --oracle-pin não é suportado com nosmt no momento (ver 4.3).
 
-  - Os patches IPCC foram portados manualmente para kernel 7.0.0-rc1. Pode
-    haver divergências menores em relação à versão original de Ricardo Neri.
+  - Vazão varia ~0.5-1% entre sessões mesmo sem mudança de carga (efeito de
+    frequência/térmico). Comparações com diferença menor que isso não são
+    confiáveis sem repetir a sessão.
+
+  - Os patches IPCC foram portados manualmente para Linux 7.0.0-rc1; podem
+    existir divergências menores em relação à série original de Ricardo Neri.
 
 ================================================================================

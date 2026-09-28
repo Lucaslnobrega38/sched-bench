@@ -1,13 +1,10 @@
 #!/bin/bash
 # =============================================================================
 # BATERIA DE TESTES: ITD IPCC Scheduler vs asym_packing
-# Detecta automaticamente a topologia híbrida (P-cores/E-cores) via acpi_cppc.
+# Detecta topologia híbrida via acpi_cppc. Fases: placement, throughput,
+# heatmap (opt-in), report.
 # Uso: sudo ./run_battery.sh [--kernel <tag>] [--runs <N>] [--outdir <dir>]
-#
-# Fases:
-#   1. Placement  — cls2→P-core, cls1→E-core (relaxed + contention)
-#   2. Latência   — schbench baseline
-#   3. Throughput — N cls2 alone + N cls2 + M cls1 contention
+#                             [--phases <lista>] [--skip-to <fase>] [--oracle-pin]
 # =============================================================================
 
 set -euo pipefail
@@ -98,7 +95,7 @@ _detect_hybrid_topology
 CLASSIFIER_CPU=""
 _detect_classifier_cpu
 
-TOTAL_CPUS=$(nproc)
+TOTAL_CPUS=$(nproc --all)   # fixo: com nosmt (CPUs offline) o nº de tarefas NAO muda (12 no i5, 32 no i9)
 if [[ -n "$CLASSIFIER_CPU" ]]; then
     PCORES=$(_drop_cpu_from_list "$PCORES" "$CLASSIFIER_CPU")
     ECORES=$(_drop_cpu_from_list "$ECORES" "$CLASSIFIER_CPU")
@@ -107,6 +104,28 @@ fi
 
 N_PHYSICAL_PCORES=$(_count_physical_pcores)
 ALLCORES="${PCORES}${ECORES:+,${ECORES}}"
+
+# --oracle-pin: cls2 preso a 1 thread por P-core físico, cls1 no resto.
+ORACLE_PIN=0
+P_FIRST_THREADS=()
+CLS1_CPUS=""
+
+_build_oracle_sets() {
+    local -A seen=()
+    local -a arr
+    local cpu core_id siblings=""
+    IFS=',' read -ra arr <<< "$PCORES"
+    for cpu in "${arr[@]}"; do
+        core_id=$(cat "/sys/devices/system/cpu/cpu${cpu}/topology/core_id" 2>/dev/null) || continue
+        if [[ -z "${seen[$core_id]+x}" ]]; then
+            seen[$core_id]=1
+            P_FIRST_THREADS+=("$cpu")
+        else
+            siblings="${siblings:+$siblings,}$cpu"
+        fi
+    done
+    CLS1_CPUS="${siblings}${ECORES:+${siblings:+,}${ECORES}}"
+}
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 die()  { echo -e "${RED}[ERRO]${NC} $*" >&2; exit 1; }
@@ -127,15 +146,21 @@ while [[ $# -gt 0 ]]; do
         --outdir)   OUTDIR="$2";     shift 2 ;;
         --skip-to)  SKIP_TO="$2";    shift 2 ;;
         --phases)   ONLY_PHASES="$2"; shift 2 ;;
+        --oracle-pin) ORACLE_PIN=1; shift ;;
         --help)
-            echo "Uso: sudo ./run_battery.sh [--kernel <tag>] [--runs <N>] [--outdir <dir>]"
-            echo "Fases: placement, throughput, report"
+            echo "Uso: sudo ./run_battery.sh [--kernel <tag>] [--runs <N>] [--outdir <dir>] [--oracle-pin]"
+            echo "  --oracle-pin: cls2 preso a 1 thread por P-core físico, cls1 no resto (teto teórico;"
+            echo "                use --kernel oracle_pin e --phases placement,throughput)"
+            echo "Fases: placement, throughput, report, heatmap (opt-in: --phases heatmap;"
+            echo "       1 corrida de HEATMAP_DURATION=200 s; HEATMAP_SCENARIO=contention|relaxed)"
             echo "  --phases: lista separada por vírgula (ex: --phases placement)"
             echo "  --skip-to: pula fases anteriores (ex: --skip-to report)"
             exit 0 ;;
         *) die "Argumento desconhecido: $1" ;;
     esac
 done
+
+[[ "$ORACLE_PIN" == 1 ]] && { require taskset; _build_oracle_sets; }
 
 OUTDIR="${OUTDIR:-./results/${KERNEL_TAG}}"
 LOG="${OUTDIR}/run.log"
@@ -155,6 +180,9 @@ log " Output: ${OUTDIR}"
 log " P-cores lógicos: [${PCORES}]  (${N_PHYSICAL_PCORES} físicos)"
 log " E-cores: [${ECORES}]"
 log " Total CPUs: ${TOTAL_CPUS}"
+if [[ "$ORACLE_PIN" == 1 ]]; then
+    log " ORÁCULO PINADO: cls2 → [${P_FIRST_THREADS[*]}]  cls1 → [${CLS1_CPUS}]"
+fi
 if [[ -n "$CLASSIFIER_CPU" ]]; then
     log " CPU ${CLASSIFIER_CPU} reservada ao classificador shadow — excluída"
 else
@@ -165,6 +193,7 @@ log "========================================================="
 source "$(dirname "$0")/benchmarks/battery/preflight.sh"
 source "$(dirname "$0")/benchmarks/battery/placement.sh"
 source "$(dirname "$0")/benchmarks/battery/throughput.sh"
+source "$(dirname "$0")/benchmarks/battery/heatmap.sh"
 source "$(dirname "$0")/benchmarks/battery/report.sh"
 
 _phase_reached=""
@@ -185,6 +214,8 @@ run_preflight
 
 _should_run placement  && run_placement_tests
 _should_run throughput && run_throughput_tests
+# heatmap é opt-in (200 s por corrida): só roda com --phases heatmap
+[[ ",${ONLY_PHASES}," == *",heatmap,"* ]] && run_heatmap
 _should_run report     && generate_report
 
 log "========================================================="

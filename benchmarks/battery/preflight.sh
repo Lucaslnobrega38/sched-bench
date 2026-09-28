@@ -8,7 +8,7 @@ run_preflight() {
 
     log "Topologia detectada: P-cores=[${PCORES}] E-cores=[${ECORES}]"
 
-    require perf schbench stress-ng cyclictest python3 numactl
+    require stress-ng taskset python3
 
     # MSR necessário para leituras HFI/ITD
     if [[ ! -c /dev/cpu/0/msr ]]; then

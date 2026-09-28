@@ -1,7 +1,14 @@
 # Comportamento das Classes IPCC (Intel Thread Director)
 
-**Plataforma:** Intel i5-1335U (Raptor Lake-P) — 2 P-cores (CPU 0-3, HT) + 8 E-cores (CPU 4-11)
-**Kernel:** 7.0.0-rc1 com patches IPCC (ipcc_push)
+> Nota: este documento registra uma caracterização empírica ad-hoc (scripts
+> próprios, fora de run_battery.sh) feita para decidir quais métodos do
+> stress-ng representam classe 1 e classe 2 no artigo. Não é atualizado a
+> cada rodada da bateria — ver docs/methodology.txt para o pipeline atual
+> (placement/throughput/oracle-pin). Os deltas P-core/E-core do fim deste
+> arquivo são a fonte da Tabela III do artigo.
+
+**Plataforma:** Intel i5-1334U (Raptor Lake-U) — 2 P-cores físicos, 4 threads com Hyper-Threading (CPU 0-3) + 8 E-cores (CPU 4-11)
+**Kernel:** 7.0.0-rc1 com os patches IPCC de Ricardo Neri portados (branch de então: ipcc_push)
 **Metodologia:** stress-ng --cpu 1 --cpu-method <method>, pinado no P-core 0 via taskset, sibling HT ocioso. Classificação lida via trace_printk em arch_update_ipcc, filtrada por PID do worker (~128 amostras em 3s, ~43/s). Cada método rodou por 3s.
 
 
@@ -297,7 +304,7 @@ O número de transições indica quantas vezes a classe muda entre amostras cons
 
 7. **SIMD explícito é indistinguível para o ITD:** AVX2 FMA (47%), SHA-NI (46%), AES-NI (49%), CLMUL (48%) — todos ~50% cls2, igual a um XOR loop escalar (52%). Micro-benchmarks com intrinsics SIMD explícitos não são classificados como "vector". Apenas workloads via stress-ng (que inclui estrutura de controle) produzem classificação polarizada (rand48=98.5% cls2, div16=0% cls2).
 
-8. **Classe 4 não existe neste hardware:** nenhum workload testado (incluindo AVX2, FMA, BMI2, VNNI, POPCNT, AES-NI, SHA-NI, CLMUL e combinações) produziu classificação acima de 3. Raptor Lake-P aparenta suportar apenas 3 classes ativas (1-3).
+8. **Classe 4 não existe neste hardware:** nenhum workload testado (incluindo AVX2, FMA, BMI2, VNNI, POPCNT, AES-NI, SHA-NI, CLMUL e combinações) produziu classificação acima de 3. Raptor Lake-U aparenta suportar apenas 3 classes ativas (1-3).
 
 9. **Classe 3 é irreproduzível:** mesmo replicando as operações exatas do hamming do stress-ng (XOR + POPCNT + branch + array), a classe 3 não aparece em micro-benchmarks customizados. A classificação cls3 depende de alguma particularidade da implementação do stress-ng, não de um padrão de instrução identificável.
 

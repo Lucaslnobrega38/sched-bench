@@ -43,3 +43,35 @@
 [0;32m[04:07:01][0m =========================================================
 [0;32m[04:07:01][0m Restaurando governor → powersave
 [0;32m[04:07:01][0m Intel turbo restaurado.
+[0;32m[11:31:36][0m =========================================================
+[0;32m[11:31:36][0m  BATERIA SCHEDULER — kernel: orig_nosmt
+[0;32m[11:31:36][0m  Runs por teste: 50
+[0;32m[11:31:36][0m  Output: i5/orig_nosmt
+[0;32m[11:31:36][0m  P-cores lógicos: [0,2]  (2 físicos)
+[0;32m[11:31:36][0m  E-cores: [4,5,6,7,8,9,10,11]
+[0;32m[11:31:36][0m  Total CPUs: 12
+[0;32m[11:31:36][0m  Sem classificador shadow ativo — nenhuma CPU excluída
+[0;32m[11:31:36][0m =========================================================
+[0;32m[11:31:36][0m === FASE 0: PREFLIGHT ===
+[0;32m[11:31:36][0m Topologia detectada: P-cores=[0,2] E-cores=[4,5,6,7,8,9,10,11]
+[0;32m[11:31:36][0m CPU: 13th Gen Intel(R) Core(TM) i5-1334U
+[0;32m[11:31:36][0m Prioridades ITMT:
+[0;32m[11:31:36][0m Fixando CPU governor em 'performance'...
+[0;32m[11:31:36][0m Governor: powersave → performance
+[0;32m[11:31:36][0m Intel turbo: desativado
+[0;32m[11:31:36][0m Aquecimento (5s)...
+[0;32m[11:31:41][0m Preflight concluído.
+[0;32m[11:31:41][0m   [skip] placement
+[0;32m[11:31:41][0m === FASE 3: THROUGHPUT ===
+[0;32m[11:31:41][0m   cls2: rand48  |  cls1: div16
+[0;32m[11:31:41][0m   Total CPUs (nproc --all): 12  →  6 cls2 + 6 cls1
+[0;32m[11:31:41][0m   throughput runs = 100 (2× --runs), 10s cada
+[0;32m[11:31:41][0m   [throughput] c2_contention: 6 cls2 + 6 cls1 (média por worker cls2), 10s, lançamento=together
+[0;32m[11:48:30][0m   [throughput] c2_contention → i5/orig_nosmt/throughput/c2_contention/
+[0;32m[11:48:30][0m Fase 3 concluída → i5/orig_nosmt/throughput/
+[0;32m[11:48:30][0m   [skip] report
+[0;32m[11:48:30][0m =========================================================
+[0;32m[11:48:30][0m  BATERIA CONCLUÍDA — resultados em: i5/orig_nosmt
+[0;32m[11:48:30][0m =========================================================
+[0;32m[11:48:30][0m Restaurando governor → powersave
+[0;32m[11:48:30][0m Intel turbo restaurado.

@@ -13,12 +13,19 @@ _placement_one_run() {
 
     local cls2_pids=() cls1_pids=()
 
+    # Oráculo pinado: cada cls2 numa thread lógica própria de P-core; cls1 no resto.
+    local pin2=() pin1=() k=0
     for _ in $(seq 1 "$n_cls2"); do
-        stress-ng --cpu 1 --cpu-method "${CLS2_METHOD}" --timeout "${duration}s" --quiet &
+        pin2=()
+        [[ "${ORACLE_PIN:-0}" == 1 ]] && \
+            pin2=(taskset -c "${P_FIRST_THREADS[$(( k % ${#P_FIRST_THREADS[@]} ))]}")
+        "${pin2[@]}" stress-ng --cpu 1 --cpu-method "${CLS2_METHOD}" --timeout "${duration}s" --quiet &
         cls2_pids+=($!)
+        k=$(( k + 1 ))
     done
+    [[ "${ORACLE_PIN:-0}" == 1 ]] && pin1=(taskset -c "${CLS1_CPUS}")
     for _ in $(seq 1 "$n_cls1"); do
-        stress-ng --cpu 1 --cpu-method "${CLS1_METHOD}" --timeout "${duration}s" --quiet &
+        "${pin1[@]}" stress-ng --cpu 1 --cpu-method "${CLS1_METHOD}" --timeout "${duration}s" --quiet &
         cls1_pids+=($!)
     done
 
