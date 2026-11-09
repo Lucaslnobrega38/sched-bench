@@ -2,7 +2,7 @@
 
 Testes de corretude e o experimento empírico do deadline de leitura para o classificador de shadows do kernel (`branch shadow_classification`). O mecanismo está em `context.md` (seções 2 e 3) e o modelo de vazão e custo em `README.md`, ambos na raiz do repositório do kernel.
 
-Resumo do que se testa: E-cores forkam um shadow do `curr` numa FIFO global; cada P-core retira um shadow por tick ou ao entrar em idle, o roda em `rq->ipcc_shadow` (classe própria acima de fair, fora de `nr_running`), um hrtimer lê o hardware `d` µs depois (`ipcc_shadow_read_us`) e o turno termina; a classe volta ao alvo.
+Resumo do que se testa: cada E-core tem um P-core fixo (partição ⌊i·qtd_P/qtd_E⌋) e submete no máximo uma vez a cada `ipcc_pop_ticks · k_P` jiffies; depois do fork, o shadow vai direto para o slot do P (`via=push`) se ele está ocioso e o `cmpxchg` do slot dá certo, senão para a fila daquele P, que o P esvazia no tick ou ao entrar em idle. O shadow roda em `rq->ipcc_shadow` (classe própria acima de fair, fora de `nr_running`), um hrtimer lê o hardware `d` µs depois (`ipcc_shadow_read_us`) e a classe volta ao alvo. Os testes conferem a partição (`--emap`, montado pelo `lib.sh` com a mesma fórmula) e o período do produtor (`--pop-ticks`).
 
 ## Pré-requisitos
 
@@ -19,6 +19,7 @@ Interface do kernel usada (tudo em `/sys/kernel/debug/`):
 | `ipcc_log` | 1 liga o log por evento no ftrace (`/sys/kernel/tracing/trace`) |
 | `ipcc_shadow_read_us` | atraso da leitura, em µs (0 = timer desligado, só o tick lê) |
 | `ipcc_min_lag_ms` | lag mínimo desde a morte do último shadow do mesmo alvo |
+| `ipcc_pop_ticks` | x: cada P consome 1000/x shadows/s; um E submete no máximo a cada x·k_P jiffies (boot: `ipcc_pop_ticks=`) |
 | `ipcc_max_age_ms` | descarta shadows parados na FIFO há mais que isso (0 = nunca) |
 | `ipcc_classify` | escrever um pid submete aquele processo |
 
@@ -32,7 +33,7 @@ sudo ./run_all.sh t1 t3            # só alguns
 sudo READ_US=25 LAG_MS=2 ./t1_pipeline.sh
 ```
 
-Variáveis comuns: `READ_US` (padrão 100), `LAG_MS` (padrão 5), `DUR` (duração da carga, em s). Os knobs do kernel são guardados e restaurados ao sair. Resultados em `results/<data>/<teste>/` (`result.txt`, `stats.txt`, `trace*.txt`, `analysis.json`).
+Variáveis comuns: governor `performance` com turbo ligado durante o teste, como o `load_scaling.sh`, restaurados ao sair (`NO_TURBO=1` desliga o turbo; `FIX_FREQ=0` não mexe na frequência), `READ_US` (padrão 100), `LAG_MS` (padrão 5), `DUR` (duração da carga, em s). Os knobs do kernel são guardados e restaurados ao sair. Resultados em `results/<data>/<teste>/` (`result.txt`, `stats.txt`, `trace*.txt`, `analysis.json`).
 
 ## O que cada teste verifica
 
@@ -67,7 +68,7 @@ Cada linha tem `ipcc ns=<ns monotônico> ev=<evento> campo=valor`:
 |---|---|---|
 | `submit` | target, cpu | tick de E-core aceitou o alvo |
 | `fork` | target, shadow, err, fork_us | fork do shadow terminou (err≠0 = falhou) |
-| `pop` | cpu, idle, target, shadow, wait_us, j | P-core tirou o shadow da FIFO (`j` = jiffy) |
+| `pop` | cpu, via, ecpu, target, shadow, wait_us, j | o shadow foi iniciado no P `cpu` (`via` = push pelo E, tick ou idle pelo P; `ecpu` = E que pediu) |
 | `run` | cpu, shadow, start_us | o shadow entrou na cpu pela primeira vez (`start_us` = pop→run, deve ser µs) |
 | `deadline` | cpu, shadow, valid | o timer disparou (valid=-1: shadow fora da cpu) |
 | `end` | why, cpu, target, shadow, class, k, life_us, exec_us | o turno acabou (`why` = confirmed/syscall/timeout/other); `exec_us` = run→end |

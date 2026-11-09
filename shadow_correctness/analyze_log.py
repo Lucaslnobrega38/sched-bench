@@ -7,7 +7,9 @@ com os eventos submit, fork, pop, run, deadline, end, cap, slot_free e discard.
 
 Invariantes verificadas (cada uma vira PASS/FAIL):
   1. todo pop, end e deadline acontece num P-core;
-  2. no máximo um pop por jiffy por cpu;
+  2. partição E->P: o P de cada pop é o do grupo do E que pediu o shadow
+     (--emap), e um E não submete de novo antes de x*k_P jiffies (--pop-ticks;
+     só para submits do tick, desligável com --no-period-check);
   3. nunca dois shadows no mesmo slot ao mesmo tempo, e a ordem por shadow é
      pop -> end -> slot_free;
   4. no máximo um shadow por target em qualquer estágio
@@ -98,6 +100,10 @@ def main():
     ap.add_argument("--expect-class", type=int, default=0)
     ap.add_argument("--max-start-us", type=int, default=1000)
     ap.add_argument("--no-drain-check", action="store_true")
+    ap.add_argument("--emap", default="", help="E:P,E:P,... (partição do kernel)")
+    ap.add_argument("--pop-ticks", type=int, default=0, help="x; 0 desliga a checagem do período")
+    ap.add_argument("--no-period-check", action="store_true",
+                    help="submits do gatilho de debugfs não respeitam o período")
     ap.add_argument("--csv")
     ap.add_argument("--label", action="append", default=[])
     ap.add_argument("--json")
@@ -121,17 +127,33 @@ def main():
     rep.check("todo pop/run/end/deadline/slot_free/cap acontece num P-core", not bad_cpu,
               f"{len(bad_cpu)} fora; ex: {bad_cpu[0]}" if bad_cpu else f"{counts['pop']} pops")
 
-    # 2. um pop por jiffy por cpu
-    seen = defaultdict(set)
-    dup_j = []
-    for e in events:
-        if e["ev"] == "pop":
-            key = e["j"]
-            if key in seen[e["cpu"]]:
-                dup_j.append(e)
-            seen[e["cpu"]].add(key)
-    rep.check("no máximo um pop por jiffy por P-core", not dup_j,
-              f"{len(dup_j)} repetidos; ex: {dup_j[0]}" if dup_j else "")
+    # 2. partição E->P e período do produtor
+    emap = {int(a): int(b) for a, b in (x.split(":") for x in a.emap.split(",") if x)}
+    if emap:
+        bad_map = [e for e in events if e["ev"] == "pop" and "ecpu" in e and emap.get(e["ecpu"]) != e["cpu"]]
+        rep.check("todo pop vai para o P do grupo do E que pediu", not bad_map,
+                  f"{len(bad_map)} fora do grupo; ex: {bad_map[0]}" if bad_map else "")
+        k = Counter(emap.values())
+        if a.pop_ticks and not a.no_period_check:
+            last, short = {}, []
+            for e in events:
+                if e["ev"] == "submit" and e.get("cpu") in emap:
+                    c = e["cpu"]
+                    minimum = (a.pop_ticks * k[emap[c]] - 1) * 1e6   # 1 jiffy de folga
+                    if c in last and e["ns"] - last[c] < minimum:
+                        short.append((e, (e["ns"] - last[c]) / 1e6))
+                    last[c] = e["ns"]
+            rep.check(f"cada E respeita o período de x*k_P jiffies entre submits (x={a.pop_ticks})", not short,
+                      f"{len(short)} curtos; pior {min(s for _, s in short):.2f}ms" if short else "")
+        # vin/vout por grupo (informativo)
+        vin, vout = Counter(), Counter()
+        for e in events:
+            if e["ev"] == "submit" and e.get("cpu") in emap:
+                vin[emap[e["cpu"]]] += 1
+            elif e["ev"] == "pop":
+                vout[e["cpu"]] += 1
+        rep.info("v_in/v_out por grupo (submits/pops por s)",
+                 "; ".join(f"P{p}: {vin[p] / span_s:.0f}/{vout[p] / span_s:.0f}" for p in sorted(set(emap.values()))))
 
     # 3. slot exclusivo e ordem pop -> end -> slot_free
     slot = {}                      # cpu -> [shadow, ended]
@@ -229,7 +251,8 @@ def main():
     dl = Counter(e.get("valid") for e in events if e["ev"] == "deadline")
     dl_valid, dl_inv, dl_notcurr = dl.get(1, 0), dl.get(0, 0), dl.get(-1, 0)
     caps = counts["cap"]
-    idle_pops = sum(1 for e in pops if e.get("idle") == 1)
+    via = Counter(e.get("via", "?") for e in pops)
+    idle_pops = via.get("idle", 0)
     waits = [e["wait_us"] for e in pops if isinstance(e.get("wait_us"), int)]
     forks = [e["fork_us"] for e in events if e["ev"] == "fork" and e.get("err", 1) == 0]
     fork_fail = sum(1 for e in events if e["ev"] == "fork" and e.get("err", 0) != 0)
@@ -254,7 +277,7 @@ def main():
     rep.info("fork", f"p50={pct(forks, 50)}us p99={pct(forks, 99)}us, {fork_fail} com erro")
     rep.info("deadline", f"valido={dl_valid} invalido={dl_inv} fora_da_cpu={dl_notcurr}; cap de 1ms={caps}")
     rep.info("classes dos fins", ", ".join(f"cls{k}={v}" for k, v in sorted(classes.items())))
-    rep.info("pops", f"{len(pops)} ({idle_pops} no idle), {len(pops) / span_s:.0f}/s")
+    rep.info("pops", f"{len(pops)} ({', '.join(f'{k}={v}' for k, v in sorted(via.items()))}), {len(pops) / span_s:.0f}/s")
 
     agree = None
     if a.expect_class:
@@ -294,6 +317,7 @@ def main():
         "wait_p50_us": pct(waits, 50),
         "pops_per_s": round(len(pops) / span_s),
         "idle_pop_pct": round(100 * idle_pops / len(pops), 1) if pops else 0,
+        "push_pct": round(100 * via.get("push", 0) / len(pops), 1) if pops else 0,
         "fork_p50_us": pct(forks, 50),
         "checks_failed": rep.failed,
     }

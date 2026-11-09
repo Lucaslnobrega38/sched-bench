@@ -66,11 +66,15 @@ run_preflight() {
     done
     log "Governor: ${ORIGINAL_GOVERNOR} → performance"
 
-    # turbo desativado para reduzir variância de frequência
+    # NO_TURBO=1 (padrão): turbo desativado para reduzir variância de frequência
+    # (P a 1,3 GHz, E a 0,9 GHz no i5). NO_TURBO=0: turbo ligado, mais perto do uso
+    # real, mas a frequência passa a depender de quantos cores estão ativos e do
+    # limite de potência do pacote (PL1/PL2). Não misture os dois numa comparação.
     if [[ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]]; then
         cat /sys/devices/system/cpu/intel_pstate/no_turbo > "${OUTDIR}/raw/original_turbo.txt"
-        echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo
-        log "Intel turbo: desativado"
+        echo "${NO_TURBO:-1}" > /sys/devices/system/cpu/intel_pstate/no_turbo
+        if [[ "${NO_TURBO:-1}" == 1 ]]; then log "Intel turbo: desativado"; else log "Intel turbo: LIGADO (NO_TURBO=0)"; fi
+        echo "${NO_TURBO:-1}" > "${OUTDIR}/raw/turbo_during_run.txt"
     fi
 
     trap _restore_system EXIT

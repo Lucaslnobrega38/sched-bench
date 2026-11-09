@@ -41,6 +41,12 @@ detect_cpus() {
     [[ -n $PCPUS && -n $ECPUS ]] || { echo "não achei P-cores e E-cores em /sys/devices/cpu_{core,atom}"; exit 77; }
     IFS=, read -ra PARR <<< "$PCPUS"
     IFS=, read -ra EARR <<< "$ECPUS"
+    # mesma partição do kernel: o i-ésimo E alimenta o P de índice i*nP/nE
+    local i m=""
+    for i in "${!EARR[@]}"; do
+        m+="${EARR[i]}:${PARR[$(( i * ${#PARR[@]} / ${#EARR[@]} ))]},"
+    done
+    EMAP=${m%,}
 }
 
 sc_knob_get() { cat "$DBG/$1"; }
@@ -50,6 +56,7 @@ sc_init() {
     SC_NAME="$1"
     [[ $EUID -eq 0 ]] || { echo "rode com sudo"; exit 1; }
     [[ -r $STATS ]] || { echo "SKIP: sem $STATS (kernel sem o classificador novo, ou debugfs não montado)"; exit 77; }
+    [[ -r $DBG/ipcc_pop_ticks ]] || { echo "SKIP: kernel sem a partição E->P (sem $DBG/ipcc_pop_ticks)"; exit 77; }
     detect_cpus
 
     SC_OUT="${SC_RESULTS:-$SC_DIR/results/$(date +%Y%m%d_%H%M%S)}/$SC_NAME"
@@ -63,6 +70,22 @@ sc_init() {
     SC_DMESG0=$(dmesg | wc -l)
     trap sc_cleanup EXIT
 
+    # Padrão: governor performance e turbo LIGADO (o mesmo envelope do
+    # load_scaling.sh), restaurados ao sair. NO_TURBO=1 desliga o turbo (P a
+    # 1,3 GHz, E a 0,9 GHz: nesse regime o d de 100us não basta para o ITD
+    # convergir); FIX_FREQ=0 deixa o governor como está.
+    SC_GOV=(); SC_NT=""
+    if [[ "${FIX_FREQ:-1}" == 1 ]]; then
+        local g v
+        for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+            v=$(cat "$g" 2>/dev/null) || continue
+            SC_GOV+=("$g=$v"); echo performance > "$g" 2>/dev/null || true
+        done
+        SC_NT_FILE=/sys/devices/system/cpu/intel_pstate/no_turbo
+        SC_NT=$(cat "$SC_NT_FILE" 2>/dev/null || echo "")
+        [[ -n $SC_NT ]] && echo "${NO_TURBO:-0}" > "$SC_NT_FILE"
+    fi
+
     # parâmetros comuns, sobrescrevíveis por ambiente
     LAG_MS="${LAG_MS:-5}"
     READ_US="${READ_US:-100}"
@@ -70,7 +93,8 @@ sc_init() {
     sc_knob_set ipcc_shadow_read_us "$READ_US"
     sc_knob_set ipcc_max_age_ms 0
 
-    echo "== $SC_NAME  (P: $PCPUS | E: $ECPUS | lag=${LAG_MS}ms read=${READ_US}us)"
+    echo "== $SC_NAME  (P: $PCPUS | E: $ECPUS | lag=${LAG_MS}ms read=${READ_US}us x=$(sc_knob_get ipcc_pop_ticks) freq=$([[ ${FIX_FREQ:-1} == 1 ]] && echo "performance, turbo $([[ ${NO_TURBO:-0} == 1 ]] && echo off || echo on)" || echo 'livre'))"
+    echo "   partição E:P = $EMAP"
     echo "   saída: $SC_OUT"
 }
 
@@ -82,6 +106,9 @@ sc_cleanup() {
     sc_knob_set ipcc_max_age_ms "$SC_SAVE_AGE" 2>/dev/null || true
     sc_knob_set ipcc_shadow_read_us "$SC_SAVE_READ" 2>/dev/null || true
     sc_knob_set ipcc_log "$SC_SAVE_LOG" 2>/dev/null || true
+    local e
+    for e in "${SC_GOV[@]:-}"; do [[ -n $e ]] && echo "${e#*=}" > "${e%%=*}" 2>/dev/null || true; done
+    [[ -n "${SC_NT:-}" ]] && echo "$SC_NT" > "$SC_NT_FILE" 2>/dev/null || true
 }
 
 # ---- resultado --------------------------------------------------------------
@@ -180,15 +207,17 @@ check_dmesg_clean() {
 # identidades dos contadores; só valem com o sistema drenado
 check_identities() {
     local ins ptk pid dis fl con sys tmo oth busy popped ended hist_sum
+    local psh
     ins=$(stat_get inserted); ptk=$(stat_get popped_tick); pid=$(stat_get popped_idle)
+    psh=$(stat_get pushed)
     dis=$(stat_get discarded); fl=$(stat_get fifo_len); con=$(stat_get confirmed)
     sys=$(stat_get syscall); tmo=$(stat_get timeout); oth=$(stat_get other)
     busy=$(stat_get slots_busy)
-    popped=$((ptk + pid)); ended=$((con + sys + tmo + oth))
+    popped=$((psh + ptk + pid)); ended=$((con + sys + tmo + oth))
     hist_sum=$(awk '$1=="hist" {s+=$3} END{print s+0}' "$STATS")
 
-    check "inserted ($ins) = popped ($popped) + discarded ($dis) + fifo_len ($fl)" [ "$ins" -eq $((popped + dis + fl)) ]
-    check "popped ($popped) = terminados ($ended) + slots ocupados ($busy)" [ "$popped" -eq $((ended + busy)) ]
+    check "inserted ($ins) = iniciados ($popped: pushed $psh + tick $ptk + idle $pid) + discarded ($dis) + fila ($fl)" [ "$ins" -eq $((popped + dis + fl)) ]
+    check "iniciados ($popped) = terminados ($ended) + slots ocupados ($busy)" [ "$popped" -eq $((ended + busy)) ]
     check "histograma de vida soma os terminados ($hist_sum = $ended)" [ "$hist_sum" -eq "$ended" ]
 }
 
@@ -201,5 +230,6 @@ check_drained() {
 
 # roda o analisador de log; $@ = argumentos extras
 sc_analyze() {
-    python3 -I "$SC_DIR/analyze_log.py" --pcpus "$PCPUS" --lag-ms "$LAG_MS" "$@"
+    python3 -I "$SC_DIR/analyze_log.py" --pcpus "$PCPUS" --lag-ms "$LAG_MS" \
+        --emap "$EMAP" --pop-ticks "$(sc_knob_get ipcc_pop_ticks)" "$@"
 }

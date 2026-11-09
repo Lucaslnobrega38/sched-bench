@@ -55,7 +55,8 @@ if [[ -n $w ]]; then
     sleep 0.3
     sc_log_dump "$SC_OUT/trace_b.txt"
     phase_end b
-    out=$(sc_analyze --trace "$SC_OUT/trace_b.txt" --read-us "$READ_US" || true)
+    # o gatilho de debugfs não passa pelo período do produtor
+    out=$(sc_analyze --trace "$SC_OUT/trace_b.txt" --read-us "$READ_US" --no-period-check || true)
     if echo "$out" | grep -q 'FAIL'; then fail "b: invariantes do log (1 shadow por target / lag)"; echo "$out" | grep FAIL | sed 's/^/        /'
     else pass "b: invariantes do log (1 shadow por target / lag)"; fi
 fi

@@ -32,7 +32,8 @@ METRICS = [
     ("placement/contention/cls1_e_residency.txt",    "cls1→E", True,  "Contention"),
     ("throughput/c2_contention/compute_ops.txt",     "contention", False, "Throughput (ops/s)"),
 ]
-COLOR = {"asym": "#6B6B6B", "icas": "#009E73", "pinned": "#CC79A7"}   # cinza x verde (Okabe-Ito), sem reusar azul/laranja das classes
+# mesma paleta do smt_compare.py (skill dataviz: 3 primeiros slots, validados all-pairs para scatter)
+COLOR = {"asym": "#2a78d6", "icas": "#eb6834", "pinned": "#1baf7a"}
 
 
 def load(path):
@@ -57,7 +58,13 @@ def main():
     ap.add_argument("--panel-height", type=float, default=0.74)
     ap.add_argument("--fontsize", type=float, default=6.0)
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--only-throughput", action="store_true",
+                    help="só a coluna de vazão (para o oráculo: placement dele é 100%% por construção, sem graça de plotar)")
     args = ap.parse_args()
+
+    global METRICS
+    if args.only_throughput:
+        METRICS = [m for m in METRICS if "throughput" in m[0]]
 
     plt.rcParams.update({"font.size": args.fontsize, "axes.labelsize": args.fontsize,
                          "xtick.labelsize": args.fontsize, "ytick.labelsize": args.fontsize - 0.5})
@@ -89,7 +96,8 @@ def main():
                     ax.set_ylabel(name, labelpad=1.5, fontweight="bold")
                 continue
             groups = [(a, "asym"), (b, "icas")]
-            if d_pin is not None:
+            # oráculo só na vazão: placement dele é 100% por construção
+            if d_pin is not None and not is_pct:
                 groups.append((load(d_pin / rel), "pinned"))
             for x, (vals, key) in enumerate(groups):
                 jitter = rng.uniform(-0.28, 0.28, len(vals))
@@ -104,7 +112,8 @@ def main():
                 ax.set_ylim(-4, 104)
                 ax.set_yticks([0, 50, 100])
             else:
-                lo, hi = min(a.min(), b.min()), max(a.max(), b.max())
+                allv = np.concatenate([v for v, _ in groups if len(v)])
+                lo, hi = allv.min(), allv.max()
                 pad = (hi - lo) * 0.12 or 1
                 ax.set_ylim(lo - pad, hi + pad * 1.6)
                 ax.yaxis.set_major_locator(plt.MaxNLocator(3))
@@ -117,12 +126,16 @@ def main():
             if c == 0:
                 ax.set_ylabel(name, labelpad=1.5, fontweight="bold")
 
-    # cabeçalhos de grupo (Relaxed | Contention | Throughput)
-    for group, cols in (("Placement, relaxed (% time)", (0, 1)),
-                        ("Placement, contention (% time)", (2, 3)),
-                        ("Class-2 ops/s", (4, 4))):
+    # cabeçalhos de grupo (Relaxed | Contention | Throughput), por posição real das colunas presentes
+    all_specs = [("Placement, relaxed (% time)", "placement/relaxed"),
+                 ("Placement, contention (% time)", "placement/contention"),
+                 ("Class-2 ops/s", "throughput")]
+    for group, key in all_specs:
+        cols = [c for c, m in enumerate(METRICS) if key in m[0]]
+        if not cols:
+            continue
         x0 = axes[0, cols[0]].get_position().x0
-        x1 = axes[0, cols[1]].get_position().x1
+        x1 = axes[0, cols[-1]].get_position().x1
         fig.text((x0 + x1) / 2, 1 - 0.035 / fig_h, group, ha="center", va="top",
                  fontsize=args.fontsize + 0.5, fontweight="bold")
     fig.savefig(args.out, dpi=300)

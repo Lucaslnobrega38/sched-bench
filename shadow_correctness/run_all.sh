@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 export SC_RESULTS="${SC_RESULTS:-$PWD/results/$(date +%Y%m%d_%H%M%S)}"
 mkdir -p "$SC_RESULTS"
 
-ALL=(t1_pipeline t2_invariants t3_class t4_memory t5_edges t6_deadline_sweep)
+ALL=(t1_pipeline t2_invariants t3_class t4_memory t5_edges t7_real_tasks t6_deadline_sweep)
 SEL=("$@")
 declare -A rc
 total_fail=0
