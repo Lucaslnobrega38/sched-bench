@@ -142,7 +142,7 @@ run_placement_tests() {
 
     RUNS="$saved_runs"
 
-    python3 "${SCRIPT_DIR}/analysis/placement_accuracy.py" \
+    python3 "${REPO_ROOT}/analysis/placement_accuracy.py" \
         --input "${PLACEMENT_DIR}" \
         --pcores "${PCORES}" \
         --output "${PLACEMENT_DIR}/placement_summary.csv" \

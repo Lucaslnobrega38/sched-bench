@@ -68,8 +68,8 @@ run_preflight() {
     # turbo desativado para reduzir variância de frequência
     if [[ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]]; then
         cat /sys/devices/system/cpu/intel_pstate/no_turbo > "${OUTDIR}/raw/original_turbo.txt"
-        echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo
-        log "Intel turbo: desativado"
+        echo "${NO_TURBO:-1}" > /sys/devices/system/cpu/intel_pstate/no_turbo
+        log "Intel no_turbo=${NO_TURBO:-1} (NO_TURBO=0 liga o turbo)"
     fi
 
     trap _restore_system EXIT
