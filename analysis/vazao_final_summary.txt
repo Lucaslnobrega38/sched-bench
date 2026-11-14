@@ -1,0 +1,42 @@
+vazao_final: corte de potencia 126 W (turbo ligado); reps por celula = 8
+
+== TURBO LIGADO | contention (8 cls2 + 16 cls1)
+  cls2: vanilla    7189± 115 (n=8) | x16d250    7870±  86 (n=8,  +9.5% ± 2.0) | oracle    8489±  16 (n=8, +18.1% ± 1.6) | x16d250 capta  52% ± 12 do gap
+  cls1: vanilla  126018±1805 (n=8) | x16d250  140304±2204 (n=8, +11.3% ± 2.3) | oracle  151972± 101 (n=8, +20.6% ± 1.4) | x16d250 capta  55% ± 12 do gap
+     vanilla  potencia: media 121.8 W, min 121.5, max 123.0
+     x16d250  potencia: media 121.6 W, min 121.1, max 122.0
+     oracle   potencia: media 121.9 W, min 121.3, max 124.6
+     ajuste: vanilla: noipcc_perf_turboon rep1 145W (descartada)
+     ajuste: vanilla: noipcc_fill_turboon rep2 121.6W (entrou)
+     ajuste: oracle: noipcc_perf_turboon rep1 136W (descartada)
+     ajuste: oracle: noipcc_perf_turboon rep2 130W (descartada)
+     ajuste: oracle: noipcc_fill_turboon rep1 124.6W (entrou)
+     ajuste: oracle: noipcc_fill_turboon rep2 121.6W (entrou)
+     ajuste: x16d250: ipcc_perf_turboon rep1 138W (descartada)
+     ajuste: x16d250: ipcc_fill_turboon rep4 121.1W (entrou)
+
+== TURBO LIGADO | relaxed (8 cls2 + 8 cls1)
+  cls2: vanilla    7665± 259 (n=8) | x16d250    8346±  97 (n=8,  +8.9% ± 3.6) | oracle    8815±  17 (n=8, +15.0% ± 3.4) | x16d250 capta  59% ± 28 do gap
+  cls1: vanilla  127892±4673 (n=8) | x16d250  141466±4922 (n=8, +10.6% ± 5.3) | oracle  176287± 202 (n=8, +37.8% ± 3.7) | x16d250 capta  28% ± 14 do gap
+     vanilla  potencia: media 121.2 W, min 120.1, max 121.5
+     x16d250  potencia: media 121.4 W, min 121.3, max 121.5
+     oracle   potencia: media 121.5 W, min 121.2, max 121.8
+
+== TURBO DESLIGADO | contention (8 cls2 + 16 cls1)
+  cls2: vanilla    4503±  75 (n=8) | x16d250    5174±  43 (n=8, +14.9% ± 1.9) | oracle    5572±   4 (n=8, +23.7% ± 1.7) | x16d250 capta  63% ± 9 do gap
+  cls1: vanilla   74293± 800 (n=8) | x16d250   78250± 300 (n=8,  +5.3% ± 1.1) | oracle   83073±1012 (n=8, +11.8% ± 1.7) | x16d250 capta  45% ± 12 do gap
+     vanilla  potencia: media  36.4 W, min  36.1, max  36.9
+     x16d250  potencia: media  36.3 W, min  35.7, max  36.7
+     oracle   potencia: media  37.4 W, min  36.9, max  38.0
+
+== TURBO DESLIGADO | relaxed (8 cls2 + 8 cls1)
+  cls2: vanilla    4860±  64 (n=8) | x16d250    4989±  87 (n=8,  +2.6% ± 2.2) | oracle    5576±   1 (n=8, +14.7% ± 1.3) | x16d250 capta  18% ± 15 do gap
+  cls1: vanilla   70918±1337 (n=8) | x16d250   74181±1912 (n=8,  +4.6% ± 3.3) | oracle   85754±   1 (n=8, +20.9% ± 1.9) | x16d250 capta  22% ± 16 do gap
+     vanilla  potencia: media  31.7 W, min  31.4, max  32.0
+     x16d250  potencia: media  31.7 W, min  31.2, max  32.3
+     oracle   potencia: media  32.7 W, min  32.6, max  33.0
+
+== Sensibilidade (turbo LIGADO, contention): reposicao alternativa
+  regra (padrao)                                       cls2: x16d250  +9.5% capta  52%  |  cls1: x16d250 +11.3% capta  55%
+  oracle sem a rep1 de 124,6 W; x16d250 com a rep5     cls2: x16d250  +9.6% capta  52%  |  cls1: x16d250 +11.5% capta  56%
+  so as runs antigas boas (sem reposicao)              cls2: x16d250  +9.8% capta  54%  |  cls1: x16d250 +10.6% capta  52%

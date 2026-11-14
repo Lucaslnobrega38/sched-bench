@@ -134,8 +134,8 @@ run_placement_tests() {
 
     # Placement usa 2× --runs para capturar maior variabilidade de scheduling
     local saved_runs="$RUNS"
-    RUNS=$(( RUNS * 2 ))
-    log "  placement runs = ${RUNS} (2× --runs)"
+    RUNS="${PLACEMENT_RUNS:-$(( RUNS * 2 ))}"
+    log "  placement runs = ${RUNS} ($([[ -n "${PLACEMENT_RUNS:-}" ]] && echo "via PLACEMENT_RUNS" || echo "2× --runs"))"
 
     _run_placement_scenario "relaxed"          "${n_cls2}"  "${n_cls1_relaxed}"
     _run_placement_scenario "contention"       "${n_cls2}"  "${n_cls1_contention}"
